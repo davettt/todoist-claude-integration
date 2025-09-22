@@ -111,13 +111,14 @@ todoist-claude-integration/
 - 🚫 **No cloud storage** of sensitive information
 - ✅ **Open source** - review all code
 
-## Contributing
+## Usage & Forking
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin amazing-feature`)
-5. Open a Pull Request
+This project is open source under MIT license. You're welcome to:
+- **Fork the repository** and customize for your needs
+- **Report bugs** via GitHub issues 
+- **Suggest improvements** in discussions
+
+*Note: This is a personal productivity system. While the code is open source, I keep contributions minimal to maintain system stability.*
 
 ## Roadmap
 
