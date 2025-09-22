@@ -1,0 +1,19 @@
+COPY AND PASTE THIS INTO NEW CLAUDE CONVERSATIONS:
+
+---
+
+I have a Todoist + Claude integration system. Please read the documentation files in this folder to understand how to help me manage my tasks:
+
+[YOUR_FOLDER_PATH_HERE]
+
+Start with CLAUDE_QUICKSTART.md and examine current_tasks.json to see my current task state.
+
+---
+
+SETUP INSTRUCTIONS:
+1. Replace [YOUR_FOLDER_PATH_HERE] with your actual folder path
+2. Customize CLAUDE_QUICKSTART.md with your personal Todoist setup
+3. This file stays private - contains your specific configuration
+
+Example folder path:
+/Users/yourname/path/to/todoist-python/
