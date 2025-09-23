@@ -2,7 +2,6 @@ import requests
 import json
 import os
 import uuid
-import shutil
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 
@@ -20,200 +19,6 @@ if not TODOIST_API_TOKEN:
     print("Please create a .env file with your API token.")
     print("See setup instructions for details.")
     exit(1)
-
-def get_file_preview(filename):
-    """Get a brief preview of what's in a task file"""
-    try:
-        with open(filename, 'r') as f:
-            data = json.load(f)
-        
-        updates = len(data.get("updates", []))
-        deletions = len(data.get("deletions", []))
-        new_tasks = len(data.get("new_tasks", []))
-        
-        # Get a brief description or operation type
-        description = data.get("description", "")
-        if description:
-            # Truncate long descriptions
-            if len(description) > 60:
-                description = description[:60] + "..."
-        
-        return {
-            "updates": updates,
-            "deletions": deletions, 
-            "new_tasks": new_tasks,
-            "description": description,
-            "total": updates + deletions + new_tasks
-        }
-    except:
-        return {"error": "Cannot read file"}
-
-def handle_multiple_files(task_files):
-    """Handle the case when multiple task files are found"""
-    print("🔍 MULTIPLE TASK FILES DETECTED")
-    print("=" * 50)
-    
-    # Show file details with previews
-    for i, filename in enumerate(task_files):
-        file_age = datetime.now() - datetime.fromtimestamp(os.path.getmtime(filename))
-        age_str = ""
-        
-        if file_age.days > 0:
-            age_str = f"({file_age.days} day{'s' if file_age.days != 1 else ''} old)"
-        elif file_age.seconds > 3600:
-            hours = file_age.seconds // 3600
-            age_str = f"({hours} hour{'s' if hours != 1 else ''} old)"
-        else:
-            minutes = file_age.seconds // 60
-            age_str = f"({minutes} minute{'s' if minutes != 1 else ''} old)"
-        
-        preview = get_file_preview(filename)
-        
-        newest_indicator = " (newest)" if i == 0 else ""
-        print(f"📄 {filename}{newest_indicator} {age_str}")
-        
-        if "error" in preview:
-            print(f"   └── ❌ {preview['error']}")
-        else:
-            if preview['description']:
-                print(f"   └── {preview['description']}")
-            
-            operations = []
-            if preview['updates'] > 0:
-                operations.append(f"{preview['updates']} update{'s' if preview['updates'] != 1 else ''}")
-            if preview['deletions'] > 0:
-                operations.append(f"{preview['deletions']} deletion{'s' if preview['deletions'] != 1 else ''}")
-            if preview['new_tasks'] > 0:
-                operations.append(f"{preview['new_tasks']} new task{'s' if preview['new_tasks'] != 1 else ''}")
-            
-            if operations:
-                print(f"   └── {', '.join(operations)}")
-            else:
-                print(f"   └── No operations found")
-    
-    print()
-    print("=" * 50)
-    print("Options:")
-    print("[1] Process NEWEST file only (recommended)")
-    print("[2] Archive old files and process newest")
-    print("[3] Show detailed contents of all files")
-    print("[4] Choose specific file to process")
-    print("[5] Process all files in chronological order")
-    print("[6] Cancel and exit")
-    
-    while True:
-        choice = input("\nSelect option (1-6): ").strip()
-        
-        if choice == '1':
-            return [task_files[0]]  # Return only newest file
-        elif choice == '2':
-            # Archive old files, return newest
-            archived_count = 0
-            for old_file in task_files[1:]:
-                archive_old_file(old_file)
-                archived_count += 1
-            
-            if archived_count > 0:
-                print(f"📁 Archived {archived_count} old file{'s' if archived_count != 1 else ''}")
-            
-            return [task_files[0]]
-        elif choice == '3':
-            show_detailed_contents(task_files)
-            continue  # Show menu again
-        elif choice == '4':
-            return choose_specific_file(task_files)
-        elif choice == '5':
-            # Return all files in reverse order (oldest first)
-            return list(reversed(task_files))
-        elif choice == '6':
-            print("❌ Cancelled.")
-            return None
-        else:
-            print("❌ Invalid choice. Please select 1-6.")
-
-def archive_old_file(filename):
-    """Archive an old task file to debug_archive"""
-    debug_dir = "debug_archive"
-    if not os.path.exists(debug_dir):
-        os.makedirs(debug_dir)
-    
-    # Add timestamp to filename
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    base_name = os.path.splitext(filename)[0]
-    archived_name = f"{base_name}_archived_{timestamp}.json"
-    
-    shutil.move(filename, os.path.join(debug_dir, archived_name))
-    print(f"   📁 {filename} → debug_archive/{archived_name}")
-
-def show_detailed_contents(task_files):
-    """Show detailed contents of all task files"""
-    print()
-    print("=" * 60)
-    print("DETAILED FILE CONTENTS")
-    print("=" * 60)
-    
-    for filename in task_files:
-        print(f"\n📄 {filename}")
-        print("-" * 40)
-        
-        try:
-            with open(filename, 'r') as f:
-                data = json.load(f)
-            
-            # Show description
-            description = data.get("description", "No description")
-            print(f"Description: {description}")
-            
-            # Show updates
-            updates = data.get("updates", [])
-            if updates:
-                print(f"\n🔄 Updates ({len(updates)}):")
-                for update in updates:
-                    content = update.get("content", "Unknown task")
-                    project = update.get("project_name", "Unknown project")
-                    print(f"  • {content} → {project}")
-            
-            # Show deletions
-            deletions = data.get("deletions", [])
-            if deletions:
-                print(f"\n🗑️  Deletions ({len(deletions)}):")
-                for deletion in deletions:
-                    content = deletion.get("content", "Unknown task")
-                    reason = deletion.get("reason", "No reason given")
-                    print(f"  • {content} ({reason})")
-            
-            # Show new tasks
-            new_tasks = data.get("new_tasks", [])
-            if new_tasks:
-                print(f"\n➕ New Tasks ({len(new_tasks)}):")
-                for task in new_tasks:
-                    content = task.get("content", "Unknown task")
-                    project = task.get("project_name", "Unknown project")
-                    due_date = task.get("due_date", "No due date")
-                    print(f"  • {content} → {project} (due: {due_date})")
-            
-        except Exception as e:
-            print(f"❌ Error reading file: {str(e)}")
-
-def choose_specific_file(task_files):
-    """Let user choose a specific file to process"""
-    print("\nSelect file to process:")
-    
-    for i, filename in enumerate(task_files):
-        preview = get_file_preview(filename)
-        print(f"[{i+1}] {filename} ({preview['total']} operations)")
-    
-    while True:
-        try:
-            choice = input(f"\nSelect file (1-{len(task_files)}): ").strip()
-            index = int(choice) - 1
-            
-            if 0 <= index < len(task_files):
-                return [task_files[index]]
-            else:
-                print(f"❌ Invalid choice. Please select 1-{len(task_files)}.")
-        except ValueError:
-            print("❌ Please enter a valid number.")
 
 def get_all_tasks():
     """Fetch all tasks from Todoist to get task IDs"""
@@ -433,15 +238,34 @@ def archive_processed_file(filename):
     shutil.move(filename, os.path.join(archive_dir, archived_name))
     print(f"📁 Archived {filename} → processed/{archived_name}")
 
-def process_single_file(task_file, all_tasks, project_map, section_map):
-    """Process a single task file"""
-    print(f"\n📄 Processing: {task_file}")
-    print("-" * 50)
+def process_task_operations():
+    """Process task operations from Claude's JSON files"""
+    
+    # Find task files
+    task_files = find_task_files()
+    
+    if not task_files:
+        print("❌ No task files found!")
+        print("Expected files: tasks.json or tasks_YYYY-MM-DD.json")
+        print("💡 Ask Claude to create a task file for you!")
+        return
+    
+    # Use the newest file
+    task_file = task_files[0]
+    print(f"📄 Found task file: {task_file}")
+    
+    if len(task_files) > 1:
+        print(f"ℹ️  Note: {len(task_files)} task files found, using newest: {task_file}")
     
     try:
         # Read the JSON file
         with open(task_file, 'r') as f:
             data = json.load(f)
+        
+        # Get current tasks and project mappings
+        print("🔄 Fetching current Todoist data...")
+        all_tasks = get_all_tasks()
+        project_map, section_map = get_projects_and_sections()
         
         # Process different types of operations
         updates = data.get("updates", [])
@@ -451,35 +275,36 @@ def process_single_file(task_file, all_tasks, project_map, section_map):
         total_operations = len(updates) + len(deletions) + len(new_tasks)
         
         if total_operations == 0:
-            print("⚠️  No operations found in this file!")
-            return 0
+            print("❌ No operations found in file!")
+            return
         
         print(f"📋 Found {len(updates)} updates, {len(deletions)} deletions, {len(new_tasks)} new tasks")
+        print("-" * 50)
         
         # Show preview of operations
         if updates:
-            print("\n🔄 UPDATES:")
+            print("🔄 UPDATES:")
             for task in updates:
                 print(f"  • {task['content']} → {task.get('project_name', 'Unknown project')}")
         
         if deletions:
-            print("\n🗑️  DELETIONS:")
+            print("🗑️  DELETIONS:")
             for task in deletions:
                 print(f"  • {task['content']}")
         
         if new_tasks:
-            print("\n➕ NEW TASKS:")
+            print("➕ NEW TASKS:")
             for task in new_tasks:
                 print(f"  • {task['content']} → {task.get('project_name', 'Unknown project')}")
         
         print("-" * 50)
         
         # Ask for confirmation
-        confirm = input(f"Apply these changes from {task_file}? (y/n): ").lower().strip()
+        confirm = input("Apply these changes to Todoist? (y/n): ").lower().strip()
         
         if confirm != 'y':
-            print("⚠️  Skipped this file.")
-            return 0
+            print("❌ Cancelled. No changes made.")
+            return
         
         # Process operations
         success_count = 0
@@ -529,66 +354,24 @@ def process_single_file(task_file, all_tasks, project_map, section_map):
                     move_task_to_project_and_section(created_task['id'], project_id, section_id)
                 success_count += 1
         
-        print(f"\n✨ Processed {success_count} out of {total_operations} operations from {task_file}")
+        print("-" * 50)
+        print(f"✨ Successfully processed {success_count} out of {total_operations} operations!")
         
         # Archive the processed file
         if success_count > 0:
             archive_processed_file(task_file)
         
-        return success_count
-        
     except json.JSONDecodeError:
         print(f"❌ Error: Invalid JSON in {task_file}")
-        return 0
     except FileNotFoundError:
         print(f"❌ Error: Could not read {task_file}")
-        return 0
     except Exception as e:
-        print(f"❌ Error processing {task_file}: {str(e)}")
-        return 0
-
-def process_task_operations():
-    """Process task operations from Claude's JSON files"""
-    
-    # Find task files
-    task_files = find_task_files()
-    
-    if not task_files:
-        print("❌ No task files found!")
-        print("Expected files: tasks.json or tasks_YYYY-MM-DD.json")
-        print("💡 Ask Claude to create a task file for you!")
-        return
-    
-    # Handle multiple files intelligently
-    if len(task_files) > 1:
-        task_files = handle_multiple_files(task_files)
-        if task_files is None:  # User cancelled
-            return
-    
-    # Get current tasks and project mappings once
-    print("🔄 Fetching current Todoist data...")
-    all_tasks = get_all_tasks()
-    project_map, section_map = get_projects_and_sections()
-    
-    # Process selected files
-    total_success = 0
-    for task_file in task_files:
-        success_count = process_single_file(task_file, all_tasks, project_map, section_map)
-        total_success += success_count
-        
-        # If processing multiple files, refresh task data for subsequent files
-        if len(task_files) > 1 and task_file != task_files[-1]:
-            print("\n🔄 Refreshing task data for next file...")
-            all_tasks = get_all_tasks()
-    
-    print("\n" + "=" * 50)
-    print(f"🎉 TOTAL: Successfully processed {total_success} operations across {len(task_files)} file{'s' if len(task_files) != 1 else ''}!")
+        print(f"❌ Error: {str(e)}")
 
 if __name__ == "__main__":
-    print("🚀 Todoist Task Manager (Enhanced with Smart File Handling)")
-    print("=" * 60)
+    print("🚀 Todoist Task Manager (Enhanced with Sync API)")
+    print("=" * 50)
     print("Supports: Creating, Updating, Moving, and Deleting tasks")
-    print("Features: Multi-file detection, intelligent cleanup, user choice")
     print()
     
     # Process task operations from Claude

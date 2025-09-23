@@ -8,7 +8,9 @@
 ✅ **Complete CRUD Operations**: Create, update, move, and delete tasks  
 ✅ **Smart Organization**: Automatic project and section assignment  
 ✅ **Batch Processing**: Handle multiple operations in one go  
+✅ **Multi-File Intelligence**: Smart handling of multiple task files with user guidance  
 ✅ **Safe Operations**: Preview changes before applying  
+✅ **Automatic Cleanup**: Archive old files to prevent confusion  
 ✅ **Future-Proof**: Comprehensive documentation for easy setup  
 
 ## How It Works

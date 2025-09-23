@@ -1,5 +1,16 @@
 # System Improvements Roadmap
 
+## Recently Completed (September 2025)
+
+### ✅ Multi-File Intelligence (COMPLETED)
+Smart handling of multiple task files with user guidance:
+- Detects when multiple task files exist
+- Shows file ages and content previews
+- Recommends processing newest file (prevents old decisions overriding new ones)
+- Allows user choice: process newest, archive old files, or choose specific file
+- Automatic cleanup with archiving to prevent confusion
+- Maintains user control while providing sensible defaults
+
 ## Immediate Wins (Next Session)
 
 ### 1. Task Templates
