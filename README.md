@@ -8,17 +8,8 @@
 ✅ **Complete CRUD Operations**: Create, update, move, and delete tasks  
 ✅ **Smart Organization**: Automatic project and section assignment  
 ✅ **Batch Processing**: Handle multiple operations in one go  
-✅ **Multi-File Intelligence**: Smart handling of multiple task files with user guidance  
 ✅ **Safe Operations**: Preview changes before applying  
-✅ **Automatic Cleanup**: Archive old files to prevent confusion  
-✅ **Future-Proof**: Comprehensive documentation for easy setup  
-
-## How It Works
-
-1. **Talk to Claude**: Describe your tasks and goals naturally
-2. **Get Structured Data**: Claude creates organized JSON files
-3. **Process Automatically**: Python scripts sync everything to Todoist
-4. **Access Everywhere**: Tasks appear on all your devices instantly
+✅ **Multi-File Intelligence**: Smart handling of multiple task files with user guidance  
 
 ## Quick Start
 
@@ -28,82 +19,74 @@
 - Claude AI access (claude.ai)
 
 ### Installation
-
-1. **Clone the repository**
 ```bash
-git clone https://github.com/yourusername/todoist-claude-integration.git
+git clone [your-repo-url]
 cd todoist-claude-integration
-```
-
-2. **Install dependencies**
-```bash
 pip install requests python-dotenv
-```
-
-3. **Configure your API token**
-```bash
 cp .env.example .env
-# Edit .env and add your Todoist API token
-```
-
-4. **Set up your Todoist configuration**
-```bash
+# Add your Todoist API token to .env
 python3 get_todoist_config.py
+python3 get_current_tasks.py
 ```
 
-5. **Start managing tasks**
-```bash
-python3 todoist_manager.py
-```
+## How It Works
 
-## Documentation
-
-- 📚 **[System Documentation](SYSTEM_DOCUMENTATION.md)** - Complete technical guide
-- 🚀 **[Quick Start for Claude](CLAUDE_QUICKSTART.md)** - Claude AI integration guide  
-- 🔒 **[Security Guidelines](SECURITY_CHECKLIST.md)** - Best practices and security
-- 🛠️ **[Roadmap](IMPROVEMENTS_ROADMAP.md)** - Planned features and improvements
-
-## Core Scripts
-
-- **`todoist_manager.py`** - Main menu interface
-- **`todoist_task_manager.py`** - Enhanced task processor  
-- **`get_current_tasks.py`** - Current task analysis
-- **`get_todoist_config.py`** - Configuration setup
+1. **Talk to Claude**: Describe your tasks and goals naturally
+2. **Get Structured Data**: Claude creates organized JSON files
+3. **Process Automatically**: Python scripts sync everything to Todoist
+4. **Access Everywhere**: Tasks appear on all your devices instantly
 
 ## Example Workflow
 
 **You:** "I need to update my website, call the dentist, and plan next week's meetings"
 
-**Claude:** Creates structured JSON file:
-```json
-{
-  "new_tasks": [
-    {
-      "content": "Update website homepage",
-      "project_name": "This week", 
-      "section_name": "Incoming",
-      "labels": ["Work"],
-      "priority": 2,
-      "due_date": "2025-09-25"
-    }
-  ]
-}
+**Claude:** Creates structured JSON file with proper projects, sections, and due dates
+
+**System:** Processes file and creates tasks in Todoist automatically
+
+## Using with Claude
+
+**Start any Claude conversation with:**
+```
+I have a Todoist + Claude integration system. Please read the documentation files in this folder:
+
+[YOUR_FOLDER_PATH]
+
+Start with examining local_data/personal_data/current_tasks.json to see my current task state.
 ```
 
-**System:** Processes file and creates tasks in Todoist automatically.
+## Core Scripts
+
+- `todoist_manager.py` - Main menu interface
+- `todoist_task_manager.py` - Enhanced task processor
+- `get_current_tasks.py` - Current task analysis
+- `get_todoist_config.py` - Configuration setup
+
+## Daily Commands
+
+```bash
+# Check current tasks
+python3 get_current_tasks.py
+
+# Process task files from Claude
+python3 todoist_task_manager.py
+
+# Update your Todoist configuration
+python3 get_todoist_config.py
+```
 
 ## Project Structure
 
 ```
 todoist-claude-integration/
-├── todoist_manager.py          # Main interface
-├── todoist_task_manager.py     # Task processor
-├── get_current_tasks.py        # Status checker
-├── get_todoist_config.py       # Configuration
+├── README.md                    # This file
+├── USER_START.md               # Setup guide for new users
+├── Core Python scripts         # Main functionality
 ├── .env.example               # Environment template
-├── .gitignore                 # Git exclusions
-├── processed/                 # Archived operations
-└── docs/                      # Documentation
+└── local_data/               # Personal files (not in git)
+    ├── personal_data/        # Your tasks and config
+    ├── processed/           # Task history
+    └── backups/            # Archive files
 ```
 
 ## Security & Privacy
@@ -124,27 +107,23 @@ This project is open source under MIT license. You're welcome to:
 
 ## Roadmap
 
-- [ ] Task templates for common patterns
+- [x] Multi-file intelligence and smart cleanup
 - [ ] Calendar integration for smart scheduling  
+- [ ] Task templates for common patterns
 - [ ] Mobile quick-add interface
 - [ ] Analytics and productivity insights
-- [ ] Team collaboration features
 
-## License & Disclaimer
+## Important Disclaimers
 
-MIT License - see [LICENSE](LICENSE) file for details
-
-⚠️  **Important:** This software is provided "as is" without warranty. Users are responsible for:
-- Securing their API tokens and personal data
-- Testing the system with non-critical tasks first  
+⚠️  **Use at your own risk:** This software is provided "as is" without warranty. Users are responsible for:
+- Securing API tokens and personal data
+- Testing with non-critical tasks first  
 - Regular backups of important task data
 - Understanding the code before running it
 
-**Use at your own risk.** The authors are not responsible for any data loss, API quota exhaustion, or unintended task modifications.
-
 ## Support
 
-- 📖 Read the [documentation](SYSTEM_DOCUMENTATION.md)
+- 📖 Read USER_START.md for detailed setup
 - 🐛 Report issues on GitHub
 - 💡 Suggest features in discussions
 

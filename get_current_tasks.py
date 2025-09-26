@@ -1,51 +1,17 @@
-import requests
-import json
+"""
+Enhanced Current Tasks Analysis with modular architecture
+Fetches and analyzes current Todoist tasks using the new API client structure
+"""
+
+import sys
 import os
 from datetime import datetime, timedelta
-from dotenv import load_dotenv
 
-# Load environment variables
-load_dotenv()
+# Add current directory to path for local imports
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-TODOIST_API_TOKEN = os.getenv("TODOIST_API_TOKEN")
-
-if not TODOIST_API_TOKEN:
-    print("❌ Error: TODOIST_API_TOKEN not found!")
-    print("Please create a .env file with your API token.")
-    exit(1)
-
-def fetch_active_tasks():
-    """Fetch all active tasks from Todoist"""
-    headers = {"Authorization": f"Bearer {TODOIST_API_TOKEN}"}
-    response = requests.get("https://api.todoist.com/rest/v2/tasks", headers=headers)
-    
-    if response.status_code == 200:
-        return response.json()
-    else:
-        print(f"❌ Failed to fetch tasks: {response.text}")
-        return []
-
-def fetch_projects():
-    """Fetch projects for name mapping"""
-    headers = {"Authorization": f"Bearer {TODOIST_API_TOKEN}"}
-    response = requests.get("https://api.todoist.com/rest/v2/projects", headers=headers)
-    
-    if response.status_code == 200:
-        projects = response.json()
-        return {p['id']: p['name'] for p in projects}
-    else:
-        return {}
-
-def fetch_sections():
-    """Fetch sections for name mapping"""
-    headers = {"Authorization": f"Bearer {TODOIST_API_TOKEN}"}
-    response = requests.get("https://api.todoist.com/rest/v2/sections", headers=headers)
-    
-    if response.status_code == 200:
-        sections = response.json()
-        return {s['id']: s['name'] for s in sections}
-    else:
-        return {}
+from apis.todoist_client import TodoistClient
+from utils.file_manager import save_personal_data
 
 def categorize_tasks_by_date(tasks):
     """Categorize tasks by their due dates"""
@@ -91,8 +57,24 @@ def categorize_tasks_by_date(tasks):
         'no_due_date': no_due_date
     }
 
+def build_lookup_maps(todoist_client):
+    """Build project and section lookup maps"""
+    projects = todoist_client.get_projects()
+    sections = todoist_client.get_sections()
+    
+    if not projects:
+        return {}, {}
+    
+    project_names = {p['id']: p['name'] for p in projects}
+    section_names = {}
+    
+    if sections:
+        section_names = {s['id']: s['name'] for s in sections}
+    
+    return project_names, section_names
+
 def display_task_summary(tasks, project_names, section_names):
-    """Display a summary of current tasks"""
+    """Display a comprehensive summary of current tasks"""
     categorized = categorize_tasks_by_date(tasks)
     
     print("🚀 Current Task Overview")
@@ -154,7 +136,7 @@ def display_task_summary(tasks, project_names, section_names):
     return categorized
 
 def save_current_tasks_json(tasks, project_names, section_names):
-    """Save current tasks to JSON for Claude"""
+    """Save current tasks to JSON for Claude analysis"""
     categorized = categorize_tasks_by_date(tasks)
     
     def simplify_task(task):
@@ -171,6 +153,7 @@ def save_current_tasks_json(tasks, project_names, section_names):
             "description": task.get('description', '')
         }
     
+    # Build Claude-friendly data structure
     claude_data = {
         "generated_at": datetime.now().isoformat(),
         "summary": {
@@ -187,30 +170,50 @@ def save_current_tasks_json(tasks, project_names, section_names):
         }
     }
     
-    with open("current_tasks.json", "w") as f:
-        json.dump(claude_data, f, indent=2)
-    
-    print(f"\n💾 Current tasks saved to: current_tasks.json")
+    # Save to personal data directory
+    save_personal_data("current_tasks.json", claude_data)
     print("Share this with Claude for context-aware task planning!")
 
-if __name__ == "__main__":
+def main():
+    """Main function to analyze current tasks"""
+    print("📊 Current Tasks Analysis")
+    print("=" * 25)
+    print("Fetching and analyzing your current Todoist tasks...")
+    print()
+    
     try:
-        print("Fetching your current tasks...")
+        # Initialize Todoist client
+        todoist_client = TodoistClient()
+        print("✅ Connected to Todoist API")
         
-        # Fetch data
-        tasks = fetch_active_tasks()
-        project_names = fetch_projects()
-        section_names = fetch_sections()
+        # Fetch current data
+        print("🔄 Fetching tasks...")
+        tasks = todoist_client.get_all_tasks()
         
         if not tasks:
-            print("No active tasks found!")
-            exit(0)
+            print("📭 No active tasks found!")
+            # Still save empty data for Claude
+            save_current_tasks_json([], {}, {})
+            return
         
-        # Display summary
+        print("🔄 Fetching project and section information...")
+        project_names, section_names = build_lookup_maps(todoist_client)
+        
+        # Display comprehensive summary
         categorized = display_task_summary(tasks, project_names, section_names)
         
         # Save JSON for Claude
         save_current_tasks_json(tasks, project_names, section_names)
         
+        print(f"\n🎉 Analysis complete!")
+        print(f"📊 Processed {len(tasks)} active tasks")
+        
+    except ValueError as e:
+        print(str(e))
+        print("\nPlease check your .env file and try again.")
     except Exception as e:
-        print(f"❌ Error: {str(e)}")
+        print(f"❌ Error during task analysis: {str(e)}")
+        print("Please check your API token and internet connection.")
+
+if __name__ == "__main__":
+    main()

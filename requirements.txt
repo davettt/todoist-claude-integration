@@ -1,0 +1,9 @@
+# Core dependencies for Todoist + Claude Integration
+requests>=2.31.0
+python-dotenv>=1.0.0
+
+# Optional: Future dependencies for calendar and email integration
+# google-auth>=2.0.0
+# google-auth-oauthlib>=1.0.0
+# google-auth-httplib2>=0.2.0
+# google-api-python-client>=2.0.0

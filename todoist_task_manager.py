@@ -1,440 +1,35 @@
-import requests
-import json
+"""
+Enhanced Todoist Task Manager with modular architecture
+Processes Claude-generated JSON files using the new API client structure
+"""
+
+import sys
 import os
-import uuid
-import shutil
-from datetime import datetime, timedelta
-from dotenv import load_dotenv
+import json
+from datetime import datetime
 
-# Load environment variables from .env file
-load_dotenv()
+# Add current directory to path for local imports
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
-# Configuration
-TODOIST_API_TOKEN = os.getenv("TODOIST_API_TOKEN")
-TODOIST_API_URL = "https://api.todoist.com/rest/v2/tasks"
-TODOIST_SYNC_URL = "https://api.todoist.com/sync/v9/sync"
+from apis.todoist_client import TodoistClient
+from utils.file_manager import (
+    find_operation_files, 
+    handle_multiple_files, 
+    archive_processed_file,
+    get_file_preview
+)
 
-# Check if token is loaded
-if not TODOIST_API_TOKEN:
-    print("❌ Error: TODOIST_API_TOKEN not found!")
-    print("Please create a .env file with your API token.")
-    print("See setup instructions for details.")
-    exit(1)
-
-def get_file_preview(filename):
-    """Get a brief preview of what's in a task file"""
-    try:
-        with open(filename, 'r') as f:
-            data = json.load(f)
+def process_single_file(task_file: str, todoist_client: TodoistClient) -> int:
+    """
+    Process a single task file with enhanced error handling
+    
+    Args:
+        task_file: Path to JSON file containing task operations
+        todoist_client: Initialized Todoist API client
         
-        updates = len(data.get("updates", []))
-        deletions = len(data.get("deletions", []))
-        new_tasks = len(data.get("new_tasks", []))
-        
-        # Get a brief description or operation type
-        description = data.get("description", "")
-        if description:
-            # Truncate long descriptions
-            if len(description) > 60:
-                description = description[:60] + "..."
-        
-        return {
-            "updates": updates,
-            "deletions": deletions, 
-            "new_tasks": new_tasks,
-            "description": description,
-            "total": updates + deletions + new_tasks
-        }
-    except:
-        return {"error": "Cannot read file"}
-
-def handle_multiple_files(task_files):
-    """Handle the case when multiple task files are found"""
-    print("🔍 MULTIPLE TASK FILES DETECTED")
-    print("=" * 50)
-    
-    # Show file details with previews
-    for i, filename in enumerate(task_files):
-        file_age = datetime.now() - datetime.fromtimestamp(os.path.getmtime(filename))
-        age_str = ""
-        
-        if file_age.days > 0:
-            age_str = f"({file_age.days} day{'s' if file_age.days != 1 else ''} old)"
-        elif file_age.seconds > 3600:
-            hours = file_age.seconds // 3600
-            age_str = f"({hours} hour{'s' if hours != 1 else ''} old)"
-        else:
-            minutes = file_age.seconds // 60
-            age_str = f"({minutes} minute{'s' if minutes != 1 else ''} old)"
-        
-        preview = get_file_preview(filename)
-        
-        newest_indicator = " (newest)" if i == 0 else ""
-        print(f"📄 {filename}{newest_indicator} {age_str}")
-        
-        if "error" in preview:
-            print(f"   └── ❌ {preview['error']}")
-        else:
-            if preview['description']:
-                print(f"   └── {preview['description']}")
-            
-            operations = []
-            if preview['updates'] > 0:
-                operations.append(f"{preview['updates']} update{'s' if preview['updates'] != 1 else ''}")
-            if preview['deletions'] > 0:
-                operations.append(f"{preview['deletions']} deletion{'s' if preview['deletions'] != 1 else ''}")
-            if preview['new_tasks'] > 0:
-                operations.append(f"{preview['new_tasks']} new task{'s' if preview['new_tasks'] != 1 else ''}")
-            
-            if operations:
-                print(f"   └── {', '.join(operations)}")
-            else:
-                print(f"   └── No operations found")
-    
-    print()
-    print("=" * 50)
-    print("Options:")
-    print("[1] Process NEWEST file only (recommended)")
-    print("[2] Archive old files and process newest")
-    print("[3] Show detailed contents of all files")
-    print("[4] Choose specific file to process")
-    print("[5] Process all files in chronological order")
-    print("[6] Cancel and exit")
-    
-    while True:
-        choice = input("\nSelect option (1-6): ").strip()
-        
-        if choice == '1':
-            return [task_files[0]]  # Return only newest file
-        elif choice == '2':
-            # Archive old files, return newest
-            archived_count = 0
-            for old_file in task_files[1:]:
-                archive_old_file(old_file)
-                archived_count += 1
-            
-            if archived_count > 0:
-                print(f"📁 Archived {archived_count} old file{'s' if archived_count != 1 else ''}")
-            
-            return [task_files[0]]
-        elif choice == '3':
-            show_detailed_contents(task_files)
-            continue  # Show menu again
-        elif choice == '4':
-            return choose_specific_file(task_files)
-        elif choice == '5':
-            # Return all files in reverse order (oldest first)
-            return list(reversed(task_files))
-        elif choice == '6':
-            print("❌ Cancelled.")
-            return None
-        else:
-            print("❌ Invalid choice. Please select 1-6.")
-
-def archive_old_file(filename):
-    """Archive an old task file to debug_archive"""
-    debug_dir = "debug_archive"
-    if not os.path.exists(debug_dir):
-        os.makedirs(debug_dir)
-    
-    # Add timestamp to filename
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    base_name = os.path.splitext(filename)[0]
-    archived_name = f"{base_name}_archived_{timestamp}.json"
-    
-    shutil.move(filename, os.path.join(debug_dir, archived_name))
-    print(f"   📁 {filename} → debug_archive/{archived_name}")
-
-def show_detailed_contents(task_files):
-    """Show detailed contents of all task files"""
-    print()
-    print("=" * 60)
-    print("DETAILED FILE CONTENTS")
-    print("=" * 60)
-    
-    for filename in task_files:
-        print(f"\n📄 {filename}")
-        print("-" * 40)
-        
-        try:
-            with open(filename, 'r') as f:
-                data = json.load(f)
-            
-            # Show description
-            description = data.get("description", "No description")
-            print(f"Description: {description}")
-            
-            # Show updates
-            updates = data.get("updates", [])
-            if updates:
-                print(f"\n🔄 Updates ({len(updates)}):")
-                for update in updates:
-                    content = update.get("content", "Unknown task")
-                    project = update.get("project_name", "Unknown project")
-                    print(f"  • {content} → {project}")
-            
-            # Show deletions
-            deletions = data.get("deletions", [])
-            if deletions:
-                print(f"\n🗑️  Deletions ({len(deletions)}):")
-                for deletion in deletions:
-                    content = deletion.get("content", "Unknown task")
-                    reason = deletion.get("reason", "No reason given")
-                    print(f"  • {content} ({reason})")
-            
-            # Show new tasks
-            new_tasks = data.get("new_tasks", [])
-            if new_tasks:
-                print(f"\n➕ New Tasks ({len(new_tasks)}):")
-                for task in new_tasks:
-                    content = task.get("content", "Unknown task")
-                    project = task.get("project_name", "Unknown project")
-                    due_date = task.get("due_date", "No due date")
-                    print(f"  • {content} → {project} (due: {due_date})")
-            
-        except Exception as e:
-            print(f"❌ Error reading file: {str(e)}")
-
-def choose_specific_file(task_files):
-    """Let user choose a specific file to process"""
-    print("\nSelect file to process:")
-    
-    for i, filename in enumerate(task_files):
-        preview = get_file_preview(filename)
-        print(f"[{i+1}] {filename} ({preview['total']} operations)")
-    
-    while True:
-        try:
-            choice = input(f"\nSelect file (1-{len(task_files)}): ").strip()
-            index = int(choice) - 1
-            
-            if 0 <= index < len(task_files):
-                return [task_files[index]]
-            else:
-                print(f"❌ Invalid choice. Please select 1-{len(task_files)}.")
-        except ValueError:
-            print("❌ Please enter a valid number.")
-
-def get_all_tasks():
-    """Fetch all tasks from Todoist to get task IDs"""
-    headers = {"Authorization": f"Bearer {TODOIST_API_TOKEN}"}
-    response = requests.get(TODOIST_API_URL, headers=headers)
-    
-    if response.status_code == 200:
-        return response.json()
-    else:
-        print(f"❌ Failed to fetch tasks: {response.text}")
-        return []
-
-def get_projects_and_sections():
-    """Fetch projects and sections for ID mapping"""
-    headers = {"Authorization": f"Bearer {TODOIST_API_TOKEN}"}
-    
-    # Get projects
-    projects_response = requests.get("https://api.todoist.com/rest/v2/projects", headers=headers)
-    projects = projects_response.json() if projects_response.status_code == 200 else []
-    project_map = {p['name']: p['id'] for p in projects}
-    
-    # Get sections
-    sections_response = requests.get("https://api.todoist.com/rest/v2/sections", headers=headers)
-    sections = sections_response.json() if sections_response.status_code == 200 else []
-    section_map = {}
-    for section in sections:
-        project_id = section['project_id']
-        section_name = section['name']
-        if project_id not in section_map:
-            section_map[project_id] = {}
-        section_map[project_id][section_name] = section['id']
-    
-    return project_map, section_map
-
-def find_task_by_content(all_tasks, content):
-    """Find a task by its content"""
-    for task in all_tasks:
-        if task['content'] == content:
-            return task
-    return None
-
-def create_todoist_task(task_data):
-    """Create a single task in Todoist"""
-    headers = {
-        "Authorization": f"Bearer {TODOIST_API_TOKEN}",
-        "Content-Type": "application/json"
-    }
-    
-    response = requests.post(TODOIST_API_URL, headers=headers, json=task_data)
-    
-    if response.status_code == 200:
-        task = response.json()
-        print(f"✅ Created: {task['content']}")
-        return task
-    else:
-        print(f"❌ Failed to create task: {task_data['content']}")
-        print(f"Error: {response.text}")
-        return None
-
-def update_task_fields(task_id, task_data):
-    """Update task fields that work with REST API (not project/section)"""
-    headers = {
-        "Authorization": f"Bearer {TODOIST_API_TOKEN}",
-        "Content-Type": "application/json"
-    }
-    
-    # Only include fields that work with REST API
-    update_data = {}
-    
-    for field in ['content', 'description', 'priority', 'labels', 'due_string']:
-        if field in task_data:
-            update_data[field] = task_data[field]
-    
-    if not update_data:
-        return True  # Nothing to update
-    
-    response = requests.post(f"{TODOIST_API_URL}/{task_id}", headers=headers, json=update_data)
-    
-    if response.status_code == 200:
-        return True
-    else:
-        print(f"❌ Failed to update task fields: {response.text}")
-        return False
-
-def move_task_to_project_and_section(task_id, project_id, section_id=None):
-    """Move task using Sync API (supports project/section moves)"""
-    headers = {
-        "Authorization": f"Bearer {TODOIST_API_TOKEN}",
-        "Content-Type": "application/json"
-    }
-    
-    commands = []
-    
-    # Step 1: Move to project if specified
-    if project_id:
-        move_project_uuid = str(uuid.uuid4())
-        commands.append({
-            "type": "item_move",
-            "uuid": move_project_uuid,
-            "args": {
-                "id": task_id,
-                "project_id": int(project_id)
-            }
-        })
-    
-    # Step 2: Move to section if specified (separate command)
-    if section_id:
-        move_section_uuid = str(uuid.uuid4())
-        commands.append({
-            "type": "item_move",
-            "uuid": move_section_uuid,
-            "args": {
-                "id": task_id,
-                "section_id": int(section_id)
-            }
-        })
-    
-    if not commands:
-        return True  # Nothing to move
-    
-    # Execute all commands
-    sync_data = {"commands": commands}
-    
-    response = requests.post(TODOIST_SYNC_URL, headers=headers, json=sync_data)
-    
-    if response.status_code == 200:
-        result = response.json()
-        
-        # Check for errors in sync_status
-        if 'sync_status' in result:
-            for command_uuid, status in result['sync_status'].items():
-                if 'error' in status:
-                    print(f"❌ Move command failed: {status['error']}")
-                    return False
-        
-        return True
-    else:
-        print(f"❌ Failed to move task: {response.text}")
-        return False
-
-def delete_todoist_task(task_id, content):
-    """Delete a task from Todoist"""
-    headers = {"Authorization": f"Bearer {TODOIST_API_TOKEN}"}
-    
-    response = requests.delete(f"{TODOIST_API_URL}/{task_id}", headers=headers)
-    
-    if response.status_code == 204:
-        print(f"🗑️  Deleted: {content}")
-        return True
-    else:
-        print(f"❌ Failed to delete task: {content}")
-        print(f"Error: {response.text}")
-        return False
-
-def prepare_task_data(task, project_map, section_map):
-    """Prepare task data for Todoist API"""
-    todoist_task = {
-        "content": task["content"],
-        "description": task.get("description", ""),
-        "priority": task.get("priority", 1)
-    }
-    
-    # Add due date if provided
-    if task.get("due_date"):
-        todoist_task["due_string"] = task["due_date"]
-    
-    # Add labels if specified
-    if task.get("labels"):
-        todoist_task["labels"] = task["labels"]
-    
-    # Store project/section info separately for move operations
-    project_id = None
-    section_id = None
-    
-    if task.get("project_name"):
-        project_id = project_map.get(task["project_name"])
-    
-    if task.get("section_name") and task.get("project_name"):
-        project_id_for_section = project_map.get(task["project_name"])
-        if project_id_for_section and project_id_for_section in section_map:
-            section_id = section_map[project_id_for_section].get(task["section_name"])
-    
-    return todoist_task, project_id, section_id
-
-def find_task_files():
-    """Find all task JSON files in the current directory"""
-    import glob
-    import os
-    
-    # Look for tasks.json or tasks_*.json files
-    json_files = glob.glob("tasks*.json")
-    
-    if not json_files:
-        return None
-    
-    # Sort by modification time (newest first)
-    json_files.sort(key=os.path.getmtime, reverse=True)
-    return json_files
-
-def archive_processed_file(filename):
-    """Move processed file to archive folder"""
-    import os
-    import shutil
-    from datetime import datetime
-    
-    # Create processed folder if it doesn't exist
-    archive_dir = "processed"
-    if not os.path.exists(archive_dir):
-        os.makedirs(archive_dir)
-    
-    # Add timestamp to filename
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    base_name = os.path.splitext(filename)[0]
-    archived_name = f"{base_name}_{timestamp}.json"
-    
-    # Move file
-    shutil.move(filename, os.path.join(archive_dir, archived_name))
-    print(f"📁 Archived {filename} → processed/{archived_name}")
-
-def process_single_file(task_file, all_tasks, project_map, section_map):
-    """Process a single task file"""
+    Returns:
+        Number of successful operations
+    """
     print(f"\n📄 Processing: {task_file}")
     print("-" * 50)
     
@@ -443,7 +38,7 @@ def process_single_file(task_file, all_tasks, project_map, section_map):
         with open(task_file, 'r') as f:
             data = json.load(f)
         
-        # Process different types of operations
+        # Extract operations
         updates = data.get("updates", [])
         deletions = data.get("deletions", [])
         new_tasks = data.get("new_tasks", [])
@@ -451,7 +46,7 @@ def process_single_file(task_file, all_tasks, project_map, section_map):
         total_operations = len(updates) + len(deletions) + len(new_tasks)
         
         if total_operations == 0:
-            print("⚠️  No operations found in this file!")
+            print("⚠️ No operations found in this file!")
             return 0
         
         print(f"📋 Found {len(updates)} updates, {len(deletions)} deletions, {len(new_tasks)} new tasks")
@@ -460,17 +55,19 @@ def process_single_file(task_file, all_tasks, project_map, section_map):
         if updates:
             print("\n🔄 UPDATES:")
             for task in updates:
-                print(f"  • {task['content']} → {task.get('project_name', 'Unknown project')}")
+                project = task.get('project_name', 'Unknown project')
+                print(f"  • {task['content']} → {project}")
         
         if deletions:
-            print("\n🗑️  DELETIONS:")
+            print("\n🗑️ DELETIONS:")
             for task in deletions:
                 print(f"  • {task['content']}")
         
         if new_tasks:
             print("\n➕ NEW TASKS:")
             for task in new_tasks:
-                print(f"  • {task['content']} → {task.get('project_name', 'Unknown project')}")
+                project = task.get('project_name', 'Unknown project')
+                print(f"  • {task['content']} → {project}")
         
         print("-" * 50)
         
@@ -478,56 +75,49 @@ def process_single_file(task_file, all_tasks, project_map, section_map):
         confirm = input(f"Apply these changes from {task_file}? (y/n): ").lower().strip()
         
         if confirm != 'y':
-            print("⚠️  Skipped this file.")
+            print("⚠️ Skipped this file.")
+            return 0
+        
+        # Get current tasks and project mappings
+        print("🔄 Fetching current Todoist data...")
+        existing_tasks = todoist_client.get_all_tasks()
+        if existing_tasks is None:
+            print("❌ Failed to fetch existing tasks")
+            return 0
+        
+        project_map, section_map = todoist_client.build_project_mappings()
+        if not project_map:
+            print("❌ Failed to fetch project mappings")
             return 0
         
         # Process operations
         success_count = 0
         
         # 1. Process deletions first
+        print("\n🗑️ Processing deletions...")
         for task_info in deletions:
-            existing_task = find_task_by_content(all_tasks, task_info['content'])
-            if existing_task:
-                if delete_todoist_task(existing_task['id'], task_info['content']):
-                    success_count += 1
-            else:
-                print(f"⚠️  Task not found for deletion: {task_info['content']}")
+            if todoist_client.process_task_operation(
+                task_info, "delete", existing_tasks, project_map, section_map
+            ):
+                success_count += 1
         
         # 2. Process updates
-        for task_info in updates:
-            existing_task = find_task_by_content(all_tasks, task_info['content'])
-            if existing_task:
-                task_data, project_id, section_id = prepare_task_data(task_info, project_map, section_map)
-                
-                # Update fields first
-                field_success = update_task_fields(existing_task['id'], task_data)
-                
-                # Then move if needed
-                move_success = True
-                if project_id or section_id:
-                    move_success = move_task_to_project_and_section(
-                        existing_task['id'], project_id, section_id
-                    )
-                
-                if field_success and move_success:
-                    print(f"✅ Updated: {task_info['content']}")
+        if updates:
+            print("\n🔄 Processing updates...")
+            for task_info in updates:
+                if todoist_client.process_task_operation(
+                    task_info, "update", existing_tasks, project_map, section_map
+                ):
                     success_count += 1
-                else:
-                    print(f"⚠️  Partial update for: {task_info['content']}")
-            else:
-                print(f"⚠️  Task not found for update: {task_info['content']}")
         
         # 3. Process new tasks
-        for task_info in new_tasks:
-            task_data, project_id, section_id = prepare_task_data(task_info, project_map, section_map)
-            
-            # Create task first
-            created_task = create_todoist_task(task_data)
-            if created_task:
-                # Then move if needed
-                if project_id or section_id:
-                    move_task_to_project_and_section(created_task['id'], project_id, section_id)
-                success_count += 1
+        if new_tasks:
+            print("\n➕ Processing new tasks...")
+            for task_info in new_tasks:
+                if todoist_client.process_task_operation(
+                    task_info, "create", existing_tasks, project_map, section_map
+                ):
+                    success_count += 1
         
         print(f"\n✨ Processed {success_count} out of {total_operations} operations from {task_file}")
         
@@ -548,10 +138,29 @@ def process_single_file(task_file, all_tasks, project_map, section_map):
         return 0
 
 def process_task_operations():
-    """Process task operations from Claude's JSON files"""
+    """Main function to process task operations from Claude's JSON files"""
+    print("🚀 Enhanced Todoist Task Manager")
+    print("=" * 50)
+    print("Supports: Creating, Updating, Moving, and Deleting tasks")
+    print("Features: Modular architecture, enhanced error handling, smart file management")
+    print()
+    
+    try:
+        # Initialize Todoist client
+        print("🔄 Initializing Todoist connection...")
+        todoist_client = TodoistClient()
+        print("✅ Connected to Todoist API")
+        
+    except ValueError as e:
+        print(str(e))
+        print("\nPlease check your .env file and try again.")
+        return
+    except Exception as e:
+        print(f"❌ Failed to initialize Todoist client: {str(e)}")
+        return
     
     # Find task files
-    task_files = find_task_files()
+    task_files = find_operation_files()
     
     if not task_files:
         print("❌ No task files found!")
@@ -561,35 +170,24 @@ def process_task_operations():
     
     # Handle multiple files intelligently
     if len(task_files) > 1:
+        print(f"🔍 Found {len(task_files)} task files")
         task_files = handle_multiple_files(task_files)
         if task_files is None:  # User cancelled
             return
     
-    # Get current tasks and project mappings once
-    print("🔄 Fetching current Todoist data...")
-    all_tasks = get_all_tasks()
-    project_map, section_map = get_projects_and_sections()
-    
     # Process selected files
     total_success = 0
     for task_file in task_files:
-        success_count = process_single_file(task_file, all_tasks, project_map, section_map)
+        success_count = process_single_file(task_file, todoist_client)
         total_success += success_count
         
-        # If processing multiple files, refresh task data for subsequent files
+        # If processing multiple files, add some spacing
         if len(task_files) > 1 and task_file != task_files[-1]:
-            print("\n🔄 Refreshing task data for next file...")
-            all_tasks = get_all_tasks()
+            print("\n" + "=" * 30)
     
     print("\n" + "=" * 50)
-    print(f"🎉 TOTAL: Successfully processed {total_success} operations across {len(task_files)} file{'s' if len(task_files) != 1 else ''}!")
+    files_text = "file" if len(task_files) == 1 else "files"
+    print(f"🎉 COMPLETE: Successfully processed {total_success} operations across {len(task_files)} {files_text}!")
 
 if __name__ == "__main__":
-    print("🚀 Todoist Task Manager (Enhanced with Smart File Handling)")
-    print("=" * 60)
-    print("Supports: Creating, Updating, Moving, and Deleting tasks")
-    print("Features: Multi-file detection, intelligent cleanup, user choice")
-    print()
-    
-    # Process task operations from Claude
     process_task_operations()

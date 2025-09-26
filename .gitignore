@@ -4,6 +4,13 @@
 .env.*.local
 *.key
 
+# Local data (personal files, backups, reports)
+local_data/
+*.zip
+*_backup_*
+*_report_*
+*_plan_*
+
 # Private task files (contains personal data)
 tasks*.json
 current_tasks.json
