@@ -29,10 +29,14 @@ def print_menu():
     print("  4. 📋 View my current tasks")
     print("  5. 📅 View my calendar")
     print()
+    print("💾 BACKUP:")
+    print("  6. 💾 Create backup (before making changes)")
+    print("  7. 📂 Manage backups (list/restore)")
+    print()
     print("⚙️ SETUP & HELP:")
-    print("  6. 🔧 First-time setup")
-    print("  7. 📖 Show full workflow guide")
-    print("  8. 🚪 Exit")
+    print("  8. 🔧 First-time setup")
+    print("  9. 📖 Show full workflow guide")
+    print("  10. 🚪 Exit")
     print()
 
 def run_script(script_name, description):
@@ -261,6 +265,81 @@ def first_time_setup():
     print()
     print("Setup complete! You can now use the daily workflow.")
 
+def create_backup():
+    """Create a backup of local data"""
+    print("\n" + "=" * 60)
+    print("💾 CREATE BACKUP")
+    print("=" * 60)
+    print()
+    print("This will create a timestamped backup of:")
+    print("  • All personal data files")
+    print("  • Client database (when exists)")
+    print("  • Environment configuration")
+    print("  • Personal roadmap")
+    print()
+    print("Backups are stored in: ~/Documents/todoist-backups")
+    print("Last 10 days of backups are kept automatically.")
+    print()
+    
+    description = input("Backup description (or press Enter to skip): ").strip()
+    if not description:
+        description = "Manual backup"
+    
+    try:
+        from utils.backup_manager import BackupManager
+        backup = BackupManager()
+        backup.create_backup(description)
+    except Exception as e:
+        print(f"❌ Error creating backup: {str(e)}")
+
+def manage_backups():
+    """Manage existing backups"""
+    try:
+        from utils.backup_manager import BackupManager
+        backup = BackupManager()
+        
+        while True:
+            print("\n" + "=" * 60)
+            print("📂 MANAGE BACKUPS")
+            print("=" * 60)
+            print()
+            print("Options:")
+            print("  1. List all backups")
+            print("  2. Restore from backup")
+            print("  3. Return to main menu")
+            print()
+            
+            choice = input("Choose an option (1-3): ").strip()
+            
+            if choice == '1':
+                backup.list_backups()
+                
+            elif choice == '2':
+                backups = backup.list_backups()
+                if backups:
+                    backup_num = input("\nEnter backup number to restore (or 'c' to cancel): ").strip()
+                    if backup_num.lower() != 'c':
+                        try:
+                            idx = int(backup_num) - 1
+                            if 0 <= idx < len(backups):
+                                backup.restore_backup(backups[idx]['name'])
+                            else:
+                                print("❌ Invalid backup number")
+                        except ValueError:
+                            print("❌ Invalid input")
+                            
+            elif choice == '3':
+                break
+                
+            else:
+                print("❌ Invalid choice. Please choose 1-3.")
+            
+            if choice in ['1', '2']:
+                input("\n⏎ Press Enter to continue...")
+                
+    except Exception as e:
+        print(f"❌ Error managing backups: {str(e)}")
+
 def show_full_workflow():
     """Display the full workflow guide"""
     print("\n" + "=" * 60)
@@ -307,7 +386,7 @@ def main():
         print_menu()
         
         try:
-            choice = input("Choose an option (1-8): ").strip()
+            choice = input("Choose an option (1-10): ").strip()
             
             if choice == '1':
                 export_daily_data()
@@ -325,17 +404,23 @@ def main():
                 view_calendar()
                 
             elif choice == '6':
-                first_time_setup()
+                create_backup()
                 
             elif choice == '7':
-                show_full_workflow()
+                manage_backups()
                 
             elif choice == '8':
+                first_time_setup()
+                
+            elif choice == '9':
+                show_full_workflow()
+                
+            elif choice == '10':
                 print("\n👋 Have a productive day!")
                 break
                 
             else:
-                print("\n❌ Invalid choice. Please choose 1-8.")
+                print("\n❌ Invalid choice. Please choose 1-10.")
             
             input("\n⏎ Press Enter to continue...")
             
