@@ -35,20 +35,26 @@ def print_menu():
     print()
     print("📋 TASK MANAGEMENT:")
     print("  1. View current tasks (overdue, today, tomorrow)")
-    print("  2. Process task operations from Claude JSON files")
+    print("  2. 🆕 Comprehensive ALL tasks analysis (strategic insights)")
+    print("  3. 📅 Calendar management interface")
+    print("  4. Process task operations from Claude JSON files")
+    print()
+    print("📅 CALENDAR MANAGEMENT:")
+    print("  5. Export calendar data for Claude analysis")
+    print("  6. Process calendar operations from Claude JSON files")
     print()
     print("⚙️ CONFIGURATION:")
-    print("  3. Fetch Todoist projects, labels & sections")
-    print("  4. View saved configuration")
+    print("  7. Fetch Todoist projects, labels & sections")
+    print("  8. View saved configuration")
     print()
     print("📁 FILE MANAGEMENT:")
-    print("  5. List task files and personal data")
-    print("  6. View processed task history")
+    print("  9. List task and calendar files")
+    print("  10. View processed file history")
     print()
     print("❓ HELP:")
-    print("  7. Show workflow instructions")
-    print("  8. System information")
-    print("  9. Exit")
+    print("  11. Show workflow instructions")
+    print("  12. System information")
+    print("  13. Exit")
     print()
 
 def run_script(script_name, description):
@@ -96,6 +102,10 @@ def list_files_and_data():
     # Personal data files
     personal_data_files = [
         'current_tasks.json',
+        'all_tasks_comprehensive.json',
+        'calendar_availability.json',
+        'calendar_full_analysis.json',
+        'calendar_integrated_insights.json',
         'todoist_reference.json'
     ]
     
@@ -115,7 +125,7 @@ def list_files_and_data():
     else:
         print("\n📄 PERSONAL DATA FILES:")
         print("  No personal data files found")
-        print("  Run option 3 to create configuration files")
+        print("  Run option 4 to create configuration files")
 
 def view_processed_history():
     """Show processed task history"""
@@ -186,24 +196,26 @@ def view_configuration():
     else:
         print("❌ No configuration file found!")
         print(f"Expected location: {config_path}")
-        print("Run option 3 to fetch your current Todoist setup.")
+        print("Run option 4 to fetch your current Todoist setup.")
 
 def show_workflow_help():
     """Display workflow instructions"""
     print("\n📖 TODOIST + CLAUDE WORKFLOW:")
     print("=" * 40)
     
-    print("\n🔄 TYPICAL WORKFLOW:")
+    print("\n🔄 ENHANCED WORKFLOW:")
     print("1. Run option 1 to see current task load")
-    print("2. Tell Claude your tasks in chat")
-    print("3. Claude creates tasks_YYYY-MM-DD.json file")
-    print("4. Save JSON file to this main folder")
-    print("5. Run option 2 to process tasks in Todoist")
-    print("6. Tasks sync to all devices automatically")
+    print("2. Run option 2 for comprehensive strategic analysis")
+    print("3. Run option 3 for calendar-integrated planning")
+    print("4. Tell Claude your tasks in chat")
+    print("5. Claude creates tasks_YYYY-MM-DD.json file")
+    print("6. Save JSON file to this main folder")
+    print("7. Run option 4 to process tasks in Todoist")
+    print("8. Tasks sync to all devices automatically")
     
     print("\n⚙️ SETUP (ONE-TIME):")
     print("• Create .env file with TODOIST_API_TOKEN")
-    print("• Run option 3 to fetch your projects/labels")
+    print("• Run option 5 to fetch your projects/labels")
     print("• Share local_data/personal_data/ files with Claude")
     
     print("\n📁 FILE STRUCTURE:")
@@ -274,38 +286,50 @@ def main():
         print_menu()
         
         try:
-            choice = input("Choose an option (1-9): ").strip()
+            choice = input("Choose an option (1-13): ").strip()
             
             if choice == '1':
                 run_script('get_current_tasks.py', 'Analyzing current tasks')
                 
             elif choice == '2':
-                run_script('todoist_task_manager.py', 'Processing Claude task operations')
+                run_script('get_all_tasks_enhanced.py', 'Comprehensive ALL tasks analysis')
                 
             elif choice == '3':
-                run_script('get_todoist_config.py', 'Fetching Todoist configuration')
+                run_script('calendar_manager.py', 'Opening Calendar Management Interface')
                 
             elif choice == '4':
-                view_configuration()
+                run_script('todoist_task_manager.py', 'Processing Claude task operations')
                 
             elif choice == '5':
-                list_files_and_data()
+                run_script('get_calendar_data.py', 'Exporting calendar data for Claude')
                 
             elif choice == '6':
-                view_processed_history()
+                run_script('calendar_event_manager.py', 'Processing calendar operations from Claude')
                 
             elif choice == '7':
-                show_workflow_help()
+                run_script('get_todoist_config.py', 'Fetching Todoist configuration')
                 
             elif choice == '8':
-                show_system_info()
+                view_configuration()
                 
             elif choice == '9':
+                list_files_and_data()
+                
+            elif choice == '10':
+                view_processed_history()
+                
+            elif choice == '11':
+                show_workflow_help()
+                
+            elif choice == '12':
+                show_system_info()
+                
+            elif choice == '13':
                 print("\n👋 Goodbye! Happy task managing!")
                 break
                 
             else:
-                print("\n❌ Invalid choice. Please choose 1-9.")
+                print("\n❌ Invalid choice. Please choose 1-13.")
             
             input("\nPress Enter to continue...")
             

@@ -1,6 +1,7 @@
 """
 Enhanced Todoist Task Manager with modular architecture
 Processes Claude-generated JSON files using the new API client structure
+UPDATED: Now supports task completions in addition to create/update/delete
 """
 
 import sys
@@ -40,16 +41,17 @@ def process_single_file(task_file: str, todoist_client: TodoistClient) -> int:
         
         # Extract operations
         updates = data.get("updates", [])
+        completions = data.get("completions", [])  # NEW: Support completions
         deletions = data.get("deletions", [])
         new_tasks = data.get("new_tasks", [])
         
-        total_operations = len(updates) + len(deletions) + len(new_tasks)
+        total_operations = len(updates) + len(completions) + len(deletions) + len(new_tasks)
         
         if total_operations == 0:
             print("⚠️ No operations found in this file!")
             return 0
         
-        print(f"📋 Found {len(updates)} updates, {len(deletions)} deletions, {len(new_tasks)} new tasks")
+        print(f"📋 Found {len(updates)} updates, {len(completions)} completions, {len(deletions)} deletions, {len(new_tasks)} new tasks")
         
         # Show preview of operations
         if updates:
@@ -57,6 +59,11 @@ def process_single_file(task_file: str, todoist_client: TodoistClient) -> int:
             for task in updates:
                 project = task.get('project_name', 'Unknown project')
                 print(f"  • {task['content']} → {project}")
+        
+        if completions:
+            print("\n✅ COMPLETIONS:")
+            for task in completions:
+                print(f"  • {task['content']}")
         
         if deletions:
             print("\n🗑️ DELETIONS:")
@@ -93,15 +100,25 @@ def process_single_file(task_file: str, todoist_client: TodoistClient) -> int:
         # Process operations
         success_count = 0
         
-        # 1. Process deletions first
-        print("\n🗑️ Processing deletions...")
-        for task_info in deletions:
-            if todoist_client.process_task_operation(
-                task_info, "delete", existing_tasks, project_map, section_map
-            ):
-                success_count += 1
+        # 1. Process completions first (marks tasks as done)
+        if completions:
+            print("\n✅ Processing completions...")
+            for task_info in completions:
+                if todoist_client.process_task_operation(
+                    task_info, "complete", existing_tasks, project_map, section_map
+                ):
+                    success_count += 1
         
-        # 2. Process updates
+        # 2. Process deletions (permanently removes tasks)
+        if deletions:
+            print("\n🗑️ Processing deletions...")
+            for task_info in deletions:
+                if todoist_client.process_task_operation(
+                    task_info, "delete", existing_tasks, project_map, section_map
+                ):
+                    success_count += 1
+        
+        # 3. Process updates
         if updates:
             print("\n🔄 Processing updates...")
             for task_info in updates:
@@ -110,7 +127,7 @@ def process_single_file(task_file: str, todoist_client: TodoistClient) -> int:
                 ):
                     success_count += 1
         
-        # 3. Process new tasks
+        # 4. Process new tasks
         if new_tasks:
             print("\n➕ Processing new tasks...")
             for task_info in new_tasks:
@@ -141,7 +158,7 @@ def process_task_operations():
     """Main function to process task operations from Claude's JSON files"""
     print("🚀 Enhanced Todoist Task Manager")
     print("=" * 50)
-    print("Supports: Creating, Updating, Moving, and Deleting tasks")
+    print("Supports: Creating, Updating, Completing, and Deleting tasks")
     print("Features: Modular architecture, enhanced error handling, smart file management")
     print()
     

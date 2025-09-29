@@ -1,6 +1,6 @@
 """
-Todoist API client for task management operations
-Extracted from existing todoist_task_manager.py with enhanced error handling
+Todoist API client for task management operations - UPDATED
+Added complete_task functionality to properly mark tasks as done
 """
 
 import uuid
@@ -8,7 +8,7 @@ from typing import Dict, Any, List, Optional
 from .base_client import BaseAPIClient
 
 class TodoistClient(BaseAPIClient):
-    """Todoist API client with complete CRUD operations"""
+    """Todoist API client with complete CRUD operations + task completion"""
     
     def __init__(self):
         super().__init__("Todoist", "TODOIST_API_TOKEN")
@@ -205,9 +205,36 @@ class TodoistClient(BaseAPIClient):
         
         return result is not None
     
+    def complete_task(self, task_id: str, task_content: str = "") -> bool:
+        """
+        Complete a task in Todoist (marks as done, preserves history)
+        This is different from delete_task - it properly completes the task
+        and advances recurring tasks to their next instance.
+        
+        Args:
+            task_id: Todoist task ID
+            task_content: Task content for logging (optional)
+            
+        Returns:
+            True if successful, False if failed
+        """
+        url = f"{self.rest_url}/tasks/{task_id}/close"
+        headers = self.get_headers()
+        
+        result = self.safe_request("POST", url, f"completing task", headers=headers)
+        
+        if result is not None:  # API returns 204 with no content on success
+            display_content = task_content or task_id
+            print(f"✅ Completed: {display_content}")
+            self.log_operation("Completed task", display_content)
+            return True
+        
+        return False
+    
     def delete_task(self, task_id: str, task_content: str = "") -> bool:
         """
-        Delete a task from Todoist
+        Delete a task from Todoist (permanently removes it)
+        Use complete_task() instead if you want to mark as done
         
         Args:
             task_id: Todoist task ID
@@ -221,12 +248,13 @@ class TodoistClient(BaseAPIClient):
         
         result = self.safe_request("DELETE", url, f"deleting task", headers=headers)
         
-        if result:
+        if result is not None:  # API returns 204 with no content on success
             display_content = task_content or task_id
             print(f"🗑️ Deleted: {display_content}")
             self.log_operation("Deleted task", display_content)
+            return True
         
-        return result is not None
+        return False
     
     # High-level operations
     
@@ -275,11 +303,11 @@ class TodoistClient(BaseAPIClient):
                              existing_tasks: List[Dict[str, Any]], project_map: Dict[str, str], 
                              section_map: Dict[str, Dict[str, str]]) -> bool:
         """
-        Process a single task operation (create, update, or delete)
+        Process a single task operation (create, update, complete, or delete)
         
         Args:
             task_info: Task information
-            operation_type: 'create', 'update', or 'delete'
+            operation_type: 'create', 'update', 'complete', or 'delete'
             existing_tasks: List of existing tasks for lookup
             project_map: Project mappings
             section_map: Section mappings
@@ -287,7 +315,15 @@ class TodoistClient(BaseAPIClient):
         Returns:
             True if successful, False if failed
         """
-        if operation_type == "delete":
+        if operation_type == "complete":
+            existing_task = self.find_task_by_content(existing_tasks, task_info['content'])
+            if existing_task:
+                return self.complete_task(existing_task['id'], task_info['content'])
+            else:
+                print(f"⚠️ Task not found for completion: {task_info['content']}")
+                return False
+        
+        elif operation_type == "delete":
             existing_task = self.find_task_by_content(existing_tasks, task_info['content'])
             if existing_task:
                 return self.delete_task(existing_task['id'], task_info['content'])
