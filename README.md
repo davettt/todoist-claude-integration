@@ -2,6 +2,8 @@
 
 *Manage your tasks by talking to Claude. Simple, powerful, automated.*
 
+**Current Version:** v1.1.0 | [Changelog](CHANGELOG.md)
+
 ---
 
 ## What This Does
@@ -43,6 +45,19 @@ python3 todoist_task_manager.py
 ```
 
 💡 **Tip:** Use `daily_manager.py` - it's easier!
+
+---
+
+## Maintenance
+
+**Before pushing to git:**
+```bash
+python3 cleanup.py  # Removes temp files
+```
+
+**Versioning:** See [CHANGELOG.md](CHANGELOG.md) for version history
+
+**Protected data:** `.gitignore` prevents committing personal data, credentials, or tokens
 
 ---
 
@@ -169,6 +184,7 @@ After creating operation file, tell user:
 todoist-python/
 ├── README.md                   ← You are here
 ├── QUICKSTART.md               ← 5-minute setup guide
+├── CHANGELOG.md                ← Version history
 ├── .env                        ← Your API token (create from .env.example)
 │
 ├── Core Scripts:
@@ -418,6 +434,7 @@ MIT License - See LICENSE file for details
 
 **Documentation:**
 - [QUICKSTART.md](QUICKSTART.md) - Setup guide
+- [CHANGELOG.md](CHANGELOG.md) - Version history
 - This README - Complete reference
 
 **Getting Help:**
@@ -432,4 +449,4 @@ MIT License - See LICENSE file for details
 
 ---
 
-*Last updated: September 29, 2025*
+*Version 1.1.0 - Last updated: September 30, 2025*

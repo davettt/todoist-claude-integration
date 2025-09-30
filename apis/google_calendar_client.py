@@ -1,6 +1,7 @@
 """
 Google Calendar API client for calendar management operations
 Mirrors the TodoistClient architecture for consistency
+FIXED VERSION - Corrects free time slot calculation
 """
 
 import os
@@ -180,7 +181,7 @@ class GoogleCalendarClient:
     
     def find_free_time(self, calendar_id: str, time_min: str, time_max: str,
                        duration_minutes: int = 60) -> List[Dict[str, Any]]:
-        """Find free time slots in the calendar"""
+        """Find free time slots in the calendar - FIXED VERSION"""
         try:
             # Get events in the time range
             events = self.get_events(calendar_id, time_min, time_max)
@@ -191,7 +192,19 @@ class GoogleCalendarClient:
             start_time = datetime.fromisoformat(time_min.replace('Z', '+00:00'))
             end_time = datetime.fromisoformat(time_max.replace('Z', '+00:00'))
             
-            # Create list of busy periods
+            # For realistic analysis, constrain to working hours (7 AM - 8 PM)
+            working_start = start_time.replace(hour=7, minute=0, second=0, microsecond=0)
+            working_end = start_time.replace(hour=20, minute=0, second=0, microsecond=0)
+            
+            # Make sure we're within the requested time range
+            working_start = max(working_start, start_time)
+            working_end = min(working_end, end_time)
+            
+            # If working hours don't overlap with requested range, return empty
+            if working_start >= working_end:
+                return []
+            
+            # Create list of busy periods (only within working hours)
             busy_periods = []
             for event in events:
                 if 'start' in event and 'end' in event:
@@ -205,53 +218,49 @@ class GoogleCalendarClient:
                         
                         start_dt = datetime.fromisoformat(event_start.replace('Z', '+00:00'))
                         end_dt = datetime.fromisoformat(event_end.replace('Z', '+00:00'))
-                        busy_periods.append((start_dt, end_dt))
+                        
+                        # Only include events that overlap with working hours
+                        if end_dt > working_start and start_dt < working_end:
+                            # Clip to working hours
+                            clipped_start = max(start_dt, working_start)
+                            clipped_end = min(end_dt, working_end)
+                            busy_periods.append((clipped_start, clipped_end))
             
             # Sort busy periods
             busy_periods.sort(key=lambda x: x[0])
             
-            # Find free slots
+            # Merge overlapping busy periods
+            merged_busy = []
+            for start, end in busy_periods:
+                if merged_busy and start <= merged_busy[-1][1]:
+                    # Overlapping or adjacent - merge
+                    merged_busy[-1] = (merged_busy[-1][0], max(merged_busy[-1][1], end))
+                else:
+                    merged_busy.append((start, end))
+            
+            # Find free slots between busy periods
             free_slots = []
-            current_time = start_time
+            current_time = working_start  # Start from working hours, not midnight
             
-            # If no events at all, the entire period is free
-            if not busy_periods:
-                # For realistic analysis, assume working hours (7 AM - 8 PM)
-                working_start = start_time.replace(hour=7, minute=0, second=0, microsecond=0)
-                working_end = start_time.replace(hour=20, minute=0, second=0, microsecond=0)
-                
-                # Make sure we're within the requested time range
-                working_start = max(working_start, start_time)
-                working_end = min(working_end, end_time)
-                
-                if working_start < working_end:
-                    total_duration = (working_end - working_start).total_seconds() / 60
-                    if total_duration >= duration_minutes:
-                        free_slots.append({
-                            'start': working_start.isoformat(),
-                            'end': working_end.isoformat(),
-                            'duration_minutes': total_duration
-                        })
-                return free_slots
-            
-            # Process each busy period
-            for busy_start, busy_end in busy_periods:
+            for busy_start, busy_end in merged_busy:
                 # Check if there's a gap before this busy period
-                if (busy_start - current_time).total_seconds() >= duration_minutes * 60:
+                gap_duration = (busy_start - current_time).total_seconds() / 60
+                if gap_duration >= duration_minutes:
                     free_slots.append({
                         'start': current_time.isoformat(),
                         'end': busy_start.isoformat(),
-                        'duration_minutes': (busy_start - current_time).total_seconds() / 60
+                        'duration_minutes': gap_duration
                     })
                 
                 current_time = max(current_time, busy_end)
             
-            # Check for free time after last event
-            if (end_time - current_time).total_seconds() >= duration_minutes * 60:
+            # Check for free time after last event (or entire day if no events)
+            final_gap = (working_end - current_time).total_seconds() / 60
+            if final_gap >= duration_minutes:
                 free_slots.append({
                     'start': current_time.isoformat(),
-                    'end': end_time.isoformat(),
-                    'duration_minutes': (end_time - current_time).total_seconds() / 60
+                    'end': working_end.isoformat(),
+                    'duration_minutes': final_gap
                 })
             
             return free_slots

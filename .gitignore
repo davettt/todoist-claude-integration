@@ -1,88 +1,51 @@
-# Environment and secrets
-.env
-.env.local
-.env.*.local
-*.key
-
-# Local data (personal files, backups, reports)
-local_data/
-*.zip
-*_backup_*
-*_report_*
-*_plan_*
-
-# Private task files (contains personal data)
-tasks*.json
-current_tasks.json
-todoist_reference.json
-tasks_needing_review.json
-
-# Processed/archive folders (contains personal data)
-processed/
-archive/
-backup/
-debug_archive/
-
 # Python
 __pycache__/
 *.py[cod]
 *$py.class
 *.so
 .Python
-build/
-develop-eggs/
-dist/
-downloads/
-eggs/
-.eggs/
-lib/
-lib64/
-parts/
-sdist/
-var/
-wheels/
 *.egg-info/
-.installed.cfg
-*.egg
+dist/
+build/
 
-# Virtual environments
+# Environment
+.env
+.venv
 venv/
-env/
 ENV/
-.venv/
 
-# IDE files
+# Local data (contains personal information)
+local_data/
+*.json
+!.env.example
+
+# Backup files
+*_BACKUP.py
+*_FIXED.py
+*_OLD.py
+*.backup
+
+# Debug and documentation files (keep docs/ folder but not root-level temp docs)
+DEBUG_*.py
+BUG_FIXES_*.md
+FIXES_COMPLETE_*.md
+
+# IDE
 .vscode/
 .idea/
 *.swp
 *.swo
 *~
 
-# macOS
+# OS
 .DS_Store
-.AppleDouble
-.LSOverride
-Icon?
-._*
-.DocumentRevisions-V100
-.fseventsd
-.Spotlight-V100
-.TemporaryItems
-.Trashes
-.VolumeIcon.icns
-.com.apple.timemachine.donotpresent
+Thumbs.db
 
-# Logs
-*.log
-logs/
+# Credentials (extra safety)
+*credentials*.json
+*token*.json
+calendar_credentials.json
+calendar_token.json
 
-# Temporary files
-tmp/
-temp/
-*.tmp
-*.bak
-
-# Personal notes or docs you don't want to share
-notes.txt
-todo.txt
-README_personal.md
+# Personal roadmap (optional - uncomment if you don't want to push it)
+# ROADMAP_personal.md

@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 """
-Calendar Data Export and Analysis
+Calendar Data Export and Analysis - TIMEZONE FIXED VERSION
 Fetches calendar data and creates insights for Claude analysis
-Mirrors the get_current_tasks.py architecture
 """
 
 import sys
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import json
 
 # Add current directory to path for local imports
@@ -16,17 +15,25 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from apis.google_calendar_client import GoogleCalendarClient
 from utils.file_manager import save_personal_data
 
+def get_local_timezone():
+    """Get the local timezone offset"""
+    import time
+    # Get local timezone offset in seconds
+    local_offset = -time.timezone if not time.daylight else -time.altzone
+    return timezone(timedelta(seconds=local_offset))
+
 def analyze_calendar_availability(calendar_client, days_ahead=14):
     """Analyze calendar availability for the next N days"""
     
-    # Calculate time range
-    now = datetime.now()
+    # Calculate time range with proper timezone
+    local_tz = get_local_timezone()
+    now = datetime.now(local_tz)
     start_time = now.replace(hour=0, minute=0, second=0, microsecond=0)
     end_time = start_time + timedelta(days=days_ahead)
     
-    # Format for API
-    time_min = start_time.isoformat() + 'Z'
-    time_max = end_time.isoformat() + 'Z'
+    # Format for API (use ISO format with timezone, not 'Z')
+    time_min = start_time.isoformat()
+    time_max = end_time.isoformat()
     
     # Process events day by day for consistency with free time analysis
     processed_events = []
@@ -34,8 +41,8 @@ def analyze_calendar_availability(calendar_client, days_ahead=14):
         day_start = start_time + timedelta(days=i)
         day_end = day_start + timedelta(days=1)
         
-        day_time_min = day_start.isoformat() + 'Z'
-        day_time_max = day_end.isoformat() + 'Z'
+        day_time_min = day_start.isoformat()
+        day_time_max = day_end.isoformat()
         
         day_events = calendar_client.get_events('primary', day_time_min, day_time_max)
         if day_events:
@@ -83,8 +90,8 @@ def analyze_calendar_availability(calendar_client, days_ahead=14):
         day_start = start_time + timedelta(days=i)
         day_end = day_start + timedelta(days=1)
         
-        day_time_min = day_start.isoformat() + 'Z'
-        day_time_max = day_end.isoformat() + 'Z'
+        day_time_min = day_start.isoformat()
+        day_time_max = day_end.isoformat()
         
         day_free_slots = calendar_client.find_free_time('primary', day_time_min, day_time_max, 30)
         
@@ -118,6 +125,9 @@ def analyze_calendar_availability(calendar_client, days_ahead=14):
                         trimmed_duration = (trimmed_end - trimmed_start).total_seconds() / 60
                         
                         if trimmed_duration >= 30:  # At least 30 minutes in working hours
+                            # Calculate how many 3-hour focus blocks fit in this slot
+                            focus_blocks_in_slot = int(trimmed_duration / 180)  # 180 min = 3 hours
+                            
                             processed_free_slots.append({
                                 'start': trimmed_start.strftime('%Y-%m-%d %H:%M'),
                                 'end': trimmed_end.strftime('%Y-%m-%d %H:%M'),
@@ -127,6 +137,7 @@ def analyze_calendar_availability(calendar_client, days_ahead=14):
                                 'day_of_week': trimmed_start.strftime('%A'),
                                 'is_large_block': trimmed_duration >= 120,  # 2+ hours
                                 'is_focus_time': trimmed_duration >= 180,   # 3+ hours
+                                'focus_blocks_count': focus_blocks_in_slot,  # How many 3h blocks fit
                             })
             except ValueError:
                 continue
@@ -144,7 +155,9 @@ def analyze_calendar_availability(calendar_client, days_ahead=14):
         total_busy_minutes = sum(e['duration_minutes'] for e in day_events)
         total_free_minutes = sum(s['duration_minutes'] for s in day_free_slots)
         large_blocks = [s for s in day_free_slots if s['is_large_block']]
-        focus_blocks = [s for s in day_free_slots if s['is_focus_time']]
+        focus_slots = [s for s in day_free_slots if s['is_focus_time']]
+        # Count total focus blocks (sum of focus_blocks_count from each slot)
+        total_focus_blocks = sum(s.get('focus_blocks_count', 0) for s in day_free_slots)
         
         # Availability rating (1-10)
         if total_free_minutes >= 480:  # 8+ hours
@@ -169,15 +182,16 @@ def analyze_calendar_availability(calendar_client, days_ahead=14):
             'total_busy_hours': round(total_busy_minutes / 60, 1),
             'total_free_hours': round(total_free_minutes / 60, 1),
             'large_blocks_count': len(large_blocks),
-            'focus_blocks_count': len(focus_blocks),
+            'focus_blocks_count': total_focus_blocks,  # Total number of 3h blocks
+            'focus_slots_count': len(focus_slots),  # Number of slots with 3+ hours
             'availability_rating': rating,
             'best_for_meetings': len(day_free_slots) > 0 and any(30 <= s['duration_minutes'] <= 90 for s in day_free_slots),
-            'best_for_deep_work': len(focus_blocks) > 0,
+            'best_for_deep_work': total_focus_blocks > 0,
             'is_weekend': day_name in ['Saturday', 'Sunday']
         }
     
     return {
-        'generated_at': datetime.now().isoformat(),
+        'generated_at': datetime.now(local_tz).isoformat(),
         'analysis_period': f"{start_time.strftime('%Y-%m-%d')} to {end_time.strftime('%Y-%m-%d')}",
         'summary': {
             'total_events': len(processed_events),
@@ -187,7 +201,8 @@ def analyze_calendar_availability(calendar_client, days_ahead=14):
             'busy_days': [date for date, analysis in daily_analysis.items() 
                         if analysis['availability_rating'] <= 3],
             'focus_time_available': sum(1 for analysis in daily_analysis.values() 
-                                      if analysis['focus_blocks_count'] > 0)
+                                      if analysis['focus_blocks_count'] > 0),
+            'total_focus_blocks': sum(analysis['focus_blocks_count'] for analysis in daily_analysis.values())
         },
         'daily_analysis': daily_analysis,
         'all_events': processed_events,
@@ -220,9 +235,11 @@ def display_calendar_summary(calendar_data):
     print(f"🎯 Best work days: {len(summary['best_days_for_work'])}")
     print(f"🔴 Busy days: {len(summary['busy_days'])}")
     print(f"💪 Days with focus time: {summary['focus_time_available']}")
+    print(f"🎯 Total focus blocks (3h each): {summary['total_focus_blocks']}")
+    print(f"   → That's {summary['total_focus_blocks'] * 3} hours of deep work capacity!")
     
     # Show next few days
-    print("\\n📅 UPCOMING DAYS OVERVIEW:")
+    print("\n📅 UPCOMING DAYS OVERVIEW:")
     print("-" * 30)
     
     for date, analysis in list(daily_analysis.items())[:7]:  # Next 7 days
@@ -243,7 +260,7 @@ def display_calendar_summary(calendar_data):
     
     # Highlight best opportunities
     if summary['best_days_for_work']:
-        print("\\n🌟 BEST PRODUCTIVITY OPPORTUNITIES:")
+        print("\n🌟 BEST PRODUCTIVITY OPPORTUNITIES:")
         for date in summary['best_days_for_work'][:3]:
             analysis = daily_analysis[date]
             print(f"  • {analysis['day_name']} ({date}): {analysis['total_free_hours']}h free")
@@ -328,7 +345,7 @@ def main():
         # Save complete data for internal use
         save_personal_data("calendar_full_analysis.json", calendar_data)
         
-        print(f"\\n💾 Calendar data exported successfully!")
+        print(f"\n💾 Calendar data exported successfully!")
         print(f"📁 Files saved:")
         print(f"  • calendar_availability.json (for Claude)")
         print(f"  • calendar_full_analysis.json (complete data)")
@@ -336,7 +353,7 @@ def main():
         
     except ValueError as e:
         print(f"❌ Setup Error: {str(e)}")
-        print("\\nSetup Instructions:")
+        print("\nSetup Instructions:")
         print("1. Install Google Calendar API: pip install google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client")
         print("2. Download credentials from Google Cloud Console")
         print("3. Save as local_data/calendar_credentials.json")

@@ -9,10 +9,17 @@ import subprocess
 import sys
 from datetime import datetime
 
+# Import version info
+try:
+    from version import __version__
+except ImportError:
+    __version__ = "unknown"
+
 def print_banner():
     """Display the main banner"""
     print("\n" + "=" * 60)
     print("🚀 TODOIST + CLAUDE DAILY MANAGER")
+    print(f"   Version {__version__}")
     print("=" * 60)
     print(f"📅 {datetime.now().strftime('%A, %B %d, %Y - %I:%M %p')}")
     print()
