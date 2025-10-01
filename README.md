@@ -91,14 +91,18 @@ Check `local_data/personal_data/`:
   "completions": [
     {
       "content": "Exact task name from Todoist",
+      "task_id": "Optional: Todoist task ID for exact match",
+      "project_name": "Optional: for disambiguation if duplicate names exist",
+      "section_name": "Optional: for disambiguation if duplicate names exist",
       "reason": "Optional: why completing"
     }
   ],
   "updates": [
     {
       "content": "Exact task name",
-      "project_name": "Project name",
-      "section_name": "Section name",
+      "task_id": "Optional: Todoist task ID for exact match",
+      "project_name": "Project name (also used for disambiguation)",
+      "section_name": "Section name (also used for disambiguation)",
       "due_date": "YYYY-MM-DD or 'tomorrow'",
       "priority": 2,
       "labels": ["Label1"],
@@ -108,6 +112,9 @@ Check `local_data/personal_data/`:
   "deletions": [
     {
       "content": "Exact task name",
+      "task_id": "Optional: Todoist task ID for exact match",
+      "project_name": "Optional: for disambiguation if duplicate names exist",
+      "section_name": "Optional: for disambiguation if duplicate names exist",
       "reason": "Optional: why deleting"
     }
   ],
@@ -130,6 +137,10 @@ Check `local_data/personal_data/`:
 **Task Matching:**
 - Use EXACT names from `current_tasks.json` or `all_tasks_comprehensive.json`
 - If uncertain, show user exact name and confirm
+- **NEW**: For duplicate task names, use one of these strategies:
+  1. Include `task_id` field (most reliable - get from exported JSON)
+  2. Include both `project_name` and `section_name` for disambiguation
+  3. Ensure task names are unique before creating tasks
 
 **Completions vs Deletions:**
 - ✅ **completions**: "done", "finished", "mark complete", "cross off"

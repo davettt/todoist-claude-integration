@@ -17,8 +17,8 @@ class BaseAPIClient:
     
     def __init__(self, service_name: str, token_env_var: str):
         """
-        Initialize base API client
-        
+        Initialize base API client with secure token handling
+
         Args:
             service_name: Human-readable service name (e.g., "Todoist")
             token_env_var: Environment variable name for API token
@@ -26,12 +26,35 @@ class BaseAPIClient:
         self.service_name = service_name
         self.token_env_var = token_env_var
         self.api_token = os.getenv(token_env_var)
-        
+
+        # Validate token exists
         if not self.api_token:
             raise ValueError(
                 f"❌ Error: {token_env_var} not found!\n"
                 f"Please add your {service_name} API token to the .env file."
             )
+
+        # Validate token format (basic sanity check)
+        if len(self.api_token) < 20:
+            raise ValueError(
+                f"❌ Error: {token_env_var} appears to be invalid!\n"
+                f"Token is too short (expected at least 20 characters).\n"
+                f"Please check your {service_name} API token in the .env file."
+            )
+
+        # Check for common placeholder values
+        placeholder_values = ['your_token_here', 'your_api_token', 'placeholder', 'xxxxx', 'your_todoist_api_token_here']
+        if self.api_token.lower() in placeholder_values:
+            raise ValueError(
+                f"❌ Error: {token_env_var} contains a placeholder value!\n"
+                f"Please replace it with your actual {service_name} API token in the .env file."
+            )
+
+        # Create masked version for safe logging (show first 4 and last 4 chars)
+        if len(self.api_token) >= 8:
+            self._masked_token = f"{self.api_token[:4]}...{self.api_token[-4:]}"
+        else:
+            self._masked_token = "****"
     
     def get_headers(self, additional_headers: Dict[str, str] = None) -> Dict[str, str]:
         """Get standard headers for API requests"""
@@ -81,11 +104,14 @@ class BaseAPIClient:
             try:
                 error_data = response.json()
                 if isinstance(error_data, dict) and 'error' in error_data:
-                    print(f"Error details: {error_data['error']}")
+                    safe_error = self._sanitize_for_logging(str(error_data['error']))
+                    print(f"Error details: {safe_error}")
                 else:
-                    print(f"Error details: {error_data}")
+                    safe_error = self._sanitize_for_logging(str(error_data))
+                    print(f"Error details: {safe_error}")
             except:
-                print(f"Error details: {response.text}")
+                safe_text = self._sanitize_for_logging(response.text[:200])
+                print(f"Error details: {safe_text}")
             return None
     
     def safe_request(self, method: str, url: str, operation: str, **kwargs) -> Optional[Dict[Any, Any]]:
@@ -112,19 +138,56 @@ class BaseAPIClient:
             print(f"❌ Timeout error: {self.service_name} request took too long")
             return None
         except requests.exceptions.RequestException as e:
-            print(f"❌ Request error: {str(e)}")
+            safe_error = self._sanitize_for_logging(str(e))
+            print(f"❌ Request error: {safe_error}")
             return None
     
     def log_operation(self, operation: str, details: str = ""):
-        """Log API operations with timestamp"""
+        """Log API operations with timestamp (token-safe)"""
         timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         log_message = f"[{timestamp}] {self.service_name}: {operation}"
         if details:
-            log_message += f" - {details}"
-        
+            # Ensure token doesn't leak in details
+            safe_details = self._sanitize_for_logging(details)
+            log_message += f" - {safe_details}"
+
         # Could extend this to write to log files if needed
         print(f"📝 {log_message}")
-    
+
+    def _sanitize_for_logging(self, text: str) -> str:
+        """
+        Remove sensitive data from text before logging
+
+        Args:
+            text: Text that may contain sensitive information
+
+        Returns:
+            Sanitized text safe for logging
+        """
+        if not isinstance(text, str):
+            return str(text)
+
+        # Replace the actual token with masked version if it appears in text
+        sanitized = text.replace(self.api_token, self._masked_token)
+
+        # Also check for common token patterns (just in case)
+        import re
+        # Match Bearer tokens, API keys with common prefixes
+        sanitized = re.sub(r'Bearer\s+[A-Za-z0-9_\-]{20,}', f'Bearer {self._masked_token}', sanitized)
+        sanitized = re.sub(r'(api[_-]?key|token)["\']?\s*[:=]\s*["\']?[A-Za-z0-9_\-]{20,}',
+                          f'\\1: {self._masked_token}', sanitized, flags=re.IGNORECASE)
+
+        return sanitized
+
+    def get_masked_token(self) -> str:
+        """
+        Get masked version of token for safe display in logs/debugging
+
+        Returns:
+            Masked token string (e.g., "abcd...xyz1")
+        """
+        return self._masked_token
+
     def validate_required_fields(self, data: Dict[str, Any], required_fields: list) -> bool:
         """
         Validate that required fields are present in data

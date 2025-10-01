@@ -142,9 +142,10 @@ def save_current_tasks_json(tasks, project_names, section_names):
     def simplify_task(task):
         project = project_names.get(task.get('project_id', ''), 'Unknown')
         section = section_names.get(task.get('section_id', ''), '')
-        
+
         return {
             "content": task['content'],
+            "task_id": task.get('id', ''),  # Include task ID for reliable matching
             "project": project,
             "section": section,
             "labels": task.get('labels', []),
