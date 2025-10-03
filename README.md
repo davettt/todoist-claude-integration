@@ -2,17 +2,18 @@
 
 *Manage your tasks by talking to Claude. Simple, powerful, automated.*
 
-**Current Version:** v1.1.0 | [Changelog](CHANGELOG.md)
+**Current Version:** v1.2.0 | [Changelog](CHANGELOG.md)
 
 ---
 
 ## What This Does
 
 1. **Export** your tasks and calendar to local files
-2. **Talk to Claude** about what you need to do
-3. **Apply** changes automatically to Todoist
+2. **Process emails** (optional) - Forward emails to create tasks automatically
+3. **Talk to Claude** about what you need to do
+4. **Apply** changes automatically to Todoist
 
-That's it. Three steps. Every day.
+That's it. Simple, powerful, automated.
 
 ---
 
@@ -29,8 +30,9 @@ This gives you a guided menu for everything:
 - Export your data (Step 1)
 - Instructions for Claude (Step 2)  
 - Apply changes (Step 3)
+- Process forwarded emails (Step 4)
 - View tasks and calendar
-- Help and setup
+- Backups and setup
 
 **Or run commands directly:**
 ```bash
@@ -187,6 +189,12 @@ After creating operation file, tell user:
 - ✅ Priority and label management
 - ✅ Recurring task support
 
+**Email Integration (NEW):**
+- 📧 Forward emails to create tasks automatically
+- 📧 Secure content sanitization (URLs/emails stripped)
+- 📧 Extract action items and meeting requests
+- 📧 Review pending operations before applying
+
 **Calendar Integration (Optional):**
 - 📅 View availability and free time
 - 📅 Schedule time blocks for tasks
@@ -284,6 +292,30 @@ todoist-python/
     {
       "content": "Update remaining address details",
       "due_date": "2025-10-03"
+    }
+  ]
+}
+```
+
+### Email Integration
+**User forwards email:** "Hi, can you update the website header by Friday? Thanks, John"
+
+**System:**
+1. Receives email in Gmail assistant inbox
+2. Strips URLs and email addresses (security)
+3. Creates operation file in `pending_operations/`
+
+**User runs:** `python3 daily_manager.py` → Option 4
+
+**Claude reviews and suggests:**
+```json
+{
+  "new_tasks": [
+    {
+      "content": "Update website header for John",
+      "project_name": "Client Work",
+      "due_date": "2025-10-06",
+      "priority": 2
     }
   ]
 }
@@ -434,12 +466,18 @@ Python Scripts ←→ Local JSON Files ←→ Claude AI
 
 ## Roadmap
 
-**Current:** ✅ Complete Todoist integration, optional Calendar
+**Current:** ✅ Complete Todoist integration, optional Calendar, Email integration (Phase 1)
+
+**Phase 1 Complete:**
+- ✅ Gmail API integration with OAuth2
+- ✅ Email content sanitization (URL/email stripping)
+- ✅ Pending operations workflow
+- ✅ Daily manager UI integration
 
 **Next:**
-- [ ] Email integration for task creation
+- [ ] Email observation period (Phase 2 - collect usage patterns)
+- [ ] Local CRM foundation (Phase 3 - client database)
 - [ ] Task templates for common patterns
-- [ ] Mobile quick-add interface
 - [ ] Analytics and productivity insights
 
 ---
@@ -480,4 +518,4 @@ MIT License - See LICENSE file for details
 
 ---
 
-*Version 1.1.0 - Last updated: September 30, 2025*
+*Version 1.2.0 - Last updated: October 3, 2025*

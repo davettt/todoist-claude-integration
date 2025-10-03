@@ -7,6 +7,37 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.2.0] - 2025-10-03
+
+### Added
+- **Email Integration (Phase 1)** - Forward emails to create tasks automatically
+  - Gmail API client with OAuth2 authentication (`apis/gmail_client.py`)
+  - Email content sanitization - strips all URLs and email addresses for security (`utils/email_sanitizer.py`)
+  - Email processor for automated task/event extraction (`email_processor.py`)
+  - CLI script for processing forwarded emails (`process_emails.py`)
+  - Pending operations directory structure (`local_data/pending_operations/`)
+  - Interaction logging for future CRM integration (`local_data/personal_data/email_interactions_log.json`)
+- Daily manager UI enhancements
+  - Banner shows pending email operation count
+  - Option 4: Process forwarded emails
+  - Updated "Instructions for Claude" to include pending operations
+  - Email operations mentioned in workflow guide
+- File manager now checks pending_operations directory
+- Security: Comprehensive URL/email stripping with 22 test cases (all passing)
+- Dependencies: beautifulsoup4, lxml for HTML email parsing
+
+### Changed
+- README updated with email integration documentation and examples
+- File structure includes pending_operations and email processing scripts
+- .gitignore updated for Gmail credentials and email interaction logs
+- requirements.txt updated with email processing dependencies
+
+### Security
+- All URLs stripped from email content before processing (no whitelisting)
+- All email addresses removed from email bodies
+- OAuth credentials and tokens properly git-ignored
+- Local-only email processing (no cloud storage)
+
 ## [1.1.0] - 2025-09-30
 
 ### Added
