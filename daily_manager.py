@@ -22,7 +22,23 @@ def print_banner():
     print(f"   Version {__version__}")
     print("=" * 60)
     print(f"📅 {datetime.now().strftime('%A, %B %d, %Y - %I:%M %p')}")
+    
+    # Show pending email operations count
+    pending_count = count_pending_email_operations()
+    if pending_count > 0:
+        print(f"📧 {pending_count} pending email operation{'s' if pending_count != 1 else ''} ready for review")
+    
     print()
+
+def count_pending_email_operations():
+    """Count pending email operation files"""
+    import glob
+    pending_dir = 'local_data/pending_operations'
+    if os.path.exists(pending_dir):
+        pattern = os.path.join(pending_dir, 'tasks_email_*.json')
+        files = glob.glob(pattern)
+        return len(files)
+    return 0
 
 def print_menu():
     """Display the simple daily menu"""
@@ -32,18 +48,21 @@ def print_menu():
     print("  2. 💬 Instructions for Claude (Step 2 - Copy/paste to Claude)")
     print("  3. ✅ Apply changes (Step 3 - After Claude creates files)")
     print()
+    print("📧 EMAIL:")
+    print("  4. 📨 Process forwarded emails (create tasks from emails)")
+    print()
     print("📊 VIEWS:")
-    print("  4. 📋 View my current tasks")
-    print("  5. 📅 View my calendar")
+    print("  5. 📋 View my current tasks")
+    print("  6. 📅 View my calendar")
     print()
     print("💾 BACKUP:")
-    print("  6. 💾 Create backup (before making changes)")
-    print("  7. 📂 Manage backups (list/restore)")
+    print("  7. 💾 Create backup (before making changes)")
+    print("  8. 📂 Manage backups (list/restore)")
     print()
     print("⚙️ SETUP & HELP:")
-    print("  8. 🔧 First-time setup")
-    print("  9. 📖 Show full workflow guide")
-    print("  10. 🚪 Exit")
+    print("  9. 🔧 First-time setup")
+    print("  10. 📖 Show full workflow guide")
+    print("  11. 🚪 Exit")
     print()
 
 def run_script(script_name, description):
@@ -99,21 +118,44 @@ def show_claude_instructions():
     print("STEP 2: TALK TO CLAUDE")
     print("=" * 60)
     print()
+    
+    # Check for pending email operations
+    pending_count = count_pending_email_operations()
+    
     print("📋 COPY AND PASTE THIS TO CLAUDE:")
     print()
     print("-" * 60)
-    message = """I need help managing my tasks.
-
-Please check the todoist-python folder and read these files:
-- local_data/personal_data/current_tasks.json
-- local_data/personal_data/calendar_full_analysis.json (if available)
-
-Then follow the instructions in the "For Claude" section of README.md"""
+    
+    # Build the message
+    lines = [
+        "I need help managing my tasks.",
+        "",
+        "Please check the todoist-python folder and read these files:",
+        "- local_data/personal_data/current_tasks.json",
+        "- local_data/personal_data/calendar_full_analysis.json (if available)"
+    ]
+    
+    if pending_count > 0:
+        email_text = f"- local_data/pending_operations/ ({pending_count} email operation"
+        if pending_count != 1:
+            email_text += "s"
+        email_text += " to review)"
+        lines.append(email_text)
+    
+    lines.append("")
+    lines.append("Then follow the instructions in the \"For Claude\" section of README.md")
+    
+    message = "\n".join(lines)
     print(message)
     print("-" * 60)
     print()
     print("Claude will then:")
     print("  ✅ Review your tasks and calendar")
+    if pending_count > 0:
+        email_text = f"  ✅ Review {pending_count} pending email operation"
+        if pending_count != 1:
+            email_text += "s"
+        print(email_text)
     print("  ✅ Help you plan your day")
     print("  ✅ Create task operation files if needed")
     print()
@@ -347,6 +389,62 @@ def manage_backups():
     except Exception as e:
         print(f"❌ Error managing backups: {str(e)}")
 
+def process_forwarded_emails():
+    """Process forwarded emails to create tasks"""
+    print("\n" + "=" * 60)
+    print("📧 PROCESS FORWARDED EMAILS")
+    print("=" * 60)
+    print()
+    print("This will process unread emails from your Gmail assistant inbox")
+    print("and create operation files for task/event creation.")
+    print()
+
+    try:
+        from email_processor import EmailProcessor
+
+        processor = EmailProcessor()
+
+        # Show stats
+        stats = processor.get_interaction_stats()
+        if stats['total_emails'] > 0:
+            print(f"📊 Previous activity: {stats['total_emails']} emails processed")
+            print()
+
+        print("🔄 Processing emails...")
+        results = processor.process_new_emails(max_emails=10)
+
+        if results:
+            print()
+            print(f"✅ Processed {len(results)} email(s)")
+            print()
+            print("📝 Next steps:")
+            print("  1. Talk to Claude about pending email operations (option 2)")
+            print("  2. Select option 3 to apply changes to Todoist")
+        else:
+            print()
+            print("📭 No new emails to process")
+
+    except ValueError as e:
+        print()
+        print("❌ Setup Error:")
+        print(f"   {str(e)}")
+        print()
+        print("📝 Setup Instructions:")
+        print("   1. Enable Gmail API in Google Cloud Console")
+        print("   2. Download OAuth credentials")
+        print("   3. Save as: local_data/gmail_credentials.json")
+        print("   4. Return to this menu and try again")
+
+    except ImportError:
+        print()
+        print("❌ Email processor not found")
+        print("   Missing: email_processor.py")
+        print("   Please ensure all email integration files are installed")
+
+    except Exception as e:
+        print()
+        print(f"❌ Error: {str(e)}")
+
 def show_full_workflow():
     """Display the full workflow guide"""
     print("\n" + "=" * 60)
@@ -363,6 +461,7 @@ def show_full_workflow():
     print("   • Start a new conversation with Claude")
     print("   • Choose option 2 to see what to say")
     print("   • Claude will help you plan and manage tasks")
+    print("   • Claude can review pending email operations")
     print("   • Save any files Claude creates to this folder")
     print()
     print("3️⃣  APPLY CHANGES (if Claude made changes)")
@@ -371,13 +470,24 @@ def show_full_workflow():
     print()
     print("-" * 60)
     print()
+    print("📧 EMAIL WORKFLOW (Optional):")
+    print("  • Forward emails to your Gmail assistant account")
+    print("  • Select option 4 to process forwarded emails")
+    print("  • System extracts tasks and creates operation files")
+    print("  • Talk to Claude about the pending operations (option 2)")
+    print("  • Review and apply changes (option 3)")
+    print()
+    print("-" * 60)
+    print()
     print("💡 WHAT CLAUDE CAN DO:")
     print("  • Review your tasks and calendar")
+    print("  • Review pending email operations")
     print("  • Help you prioritize your day")
     print("  • Create new tasks")
     print("  • Mark tasks as complete")
     print("  • Reschedule tasks")
     print("  • Delete tasks")
+    print("  • Extract tasks from forwarded emails")
     print()
     print("-" * 60)
     print()
@@ -393,41 +503,44 @@ def main():
         print_menu()
         
         try:
-            choice = input("Choose an option (1-10): ").strip()
-            
+            choice = input("Choose an option (1-11): ").strip()
+
             if choice == '1':
                 export_daily_data()
-                
+
             elif choice == '2':
                 show_claude_instructions()
-                
+
             elif choice == '3':
                 apply_changes()
-                
+
             elif choice == '4':
-                view_current_tasks()
-                
+                process_forwarded_emails()
+
             elif choice == '5':
-                view_calendar()
-                
+                view_current_tasks()
+
             elif choice == '6':
-                create_backup()
-                
+                view_calendar()
+
             elif choice == '7':
-                manage_backups()
-                
+                create_backup()
+
             elif choice == '8':
-                first_time_setup()
-                
+                manage_backups()
+
             elif choice == '9':
-                show_full_workflow()
-                
+                first_time_setup()
+
             elif choice == '10':
+                show_full_workflow()
+
+            elif choice == '11':
                 print("\n👋 Have a productive day!")
                 break
-                
+
             else:
-                print("\n❌ Invalid choice. Please choose 1-10.")
+                print("\n❌ Invalid choice. Please choose 1-11.")
             
             input("\n⏎ Press Enter to continue...")
             

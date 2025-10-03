@@ -46,6 +46,11 @@ Thumbs.db
 *token*.json
 calendar_credentials.json
 calendar_token.json
+gmail_credentials.json
+gmail_token.json
+
+# Email integration
+local_data/personal_data/email_interactions_log.json
 
 # Personal roadmap (optional - uncomment if you don't want to push it)
-# ROADMAP_personal.md
+ROADMAP_personal.md

@@ -54,8 +54,16 @@ def load_personal_data(filename: str) -> Optional[Dict[Any, Any]]:
     return None
 
 def find_operation_files(pattern: str = "tasks*.json") -> List[str]:
-    """Find operation files in main directory"""
+    """Find operation files in root directory and pending_operations directory"""
+    # Check root directory (legacy location)
     json_files = glob.glob(pattern)
+    
+    # Check pending_operations directory (new location for email operations)
+    pending_ops_dir = "local_data/pending_operations"
+    if os.path.exists(pending_ops_dir):
+        pending_pattern = os.path.join(pending_ops_dir, pattern)
+        pending_files = glob.glob(pending_pattern)
+        json_files.extend(pending_files)
     
     if json_files:
         # Sort by modification time (newest first)

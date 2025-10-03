@@ -70,14 +70,25 @@ Check `local_data/personal_data/`:
 - `current_tasks.json` - User's current tasks
 - `calendar_full_analysis.json` - Calendar (if available)
 
+Check `local_data/pending_operations/`:
+- `tasks_email_*.json` - Pending email operations to review
+- These contain sanitized email content that needs task/event extraction
+
 ### 2. Understand User Intent
 
 **Common requests:**
 - "What should I focus on?" → Review due_today and calendar
+- "Review pending emails" → Check pending_operations/ for email operations
 - "I finished [task]" → Create `completions` operation
 - "Move [task] to [date]" → Create `updates` operation  
 - "Add task: [description]" → Create `new_tasks` operation
 - "Delete [task]" → Create `deletions` operation
+
+**Email operations:**
+- Read sanitized content from `tasks_email_*.json` files
+- Extract actionable tasks and meeting requests
+- Update the same file by populating `new_tasks` and `calendar_events` arrays
+- Content is already sanitized (URLs/emails removed for security)
 
 ### 3. Create Operation File
 
@@ -202,7 +213,8 @@ todoist-python/
 │   ├── daily_manager.py            ← **START HERE** - Main CLI interface
 │   ├── get_current_tasks.py        ← Export tasks (or use CLI option 1)
 │   ├── get_calendar_data.py        ← Export calendar (or use CLI option 1)
-│   └── todoist_task_manager.py     ← Apply changes (or use CLI option 3)
+│   ├── todoist_task_manager.py     ← Apply changes (or use CLI option 3)
+│   └── process_emails.py           ← Process forwarded emails (or use CLI option 4)
 │
 ├── Setup Scripts (one-time):
 │   ├── get_todoist_config.py       ← Fetch projects/labels
@@ -213,6 +225,8 @@ todoist-python/
 │   │   ├── current_tasks.json
 │   │   ├── calendar_full_analysis.json
 │   │   └── todoist_reference.json
+│   ├── pending_operations/         ← Email operations awaiting review
+│   │   └── tasks_email_*.json
 │   └── processed/                  ← Archived operations
 │
 └── tasks_*.json                    ← Claude creates these (temporary)
@@ -302,14 +316,20 @@ python3 daily_manager.py
 1. Export data (Step 1)
 2. Instructions for Claude (Step 2)
 3. Apply changes (Step 3)
-4. View my current tasks
-5. View my calendar
-6. First-time setup
-7. Show full workflow guide
-8. Exit
+4. Process forwarded emails
+5. View my current tasks
+6. View my calendar
+7. First-time setup
+8. Show full workflow guide
+9. Exit
 ```
 
 Just run it every day and follow the numbers! 🎯
+
+**Note:** If you have pending email operations, the banner will show:
+"📧 2 pending email operations ready for review"
+
+Mention these to Claude in your conversation (option 2) and Claude will review them.
 
 ### Advanced Menu (Optional)
 
