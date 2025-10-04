@@ -23,19 +23,15 @@ def extract_original_sender(email_body: str) -> Optional[Dict[str, str]]:
     # Common forwarded email patterns
     patterns = [
         # Gmail style: "---------- Forwarded message ---------\nFrom: Name <email>"
-        r'(?:-+\s*Forwarded message\s*-+|Begin forwarded message:)\s*.*?From:\s*([^<\n]+?)\s*<([^>\n]+)>',
-
+        r"(?:-+\s*Forwarded message\s*-+|Begin forwarded message:)\s*.*?From:\s*([^<\n]+?)\s*<([^>\n]+)>",
         # Outlook style: "From: Name <email>\nSent:"
-        r'From:\s*([^<\n]+?)\s*<([^>\n]+)>\s*(?:Sent|Date):',
-
+        r"From:\s*([^<\n]+?)\s*<([^>\n]+)>\s*(?:Sent|Date):",
         # Any From: line with name and email in brackets (anywhere in email)
-        r'From:\s*([^<\n]+?)\s*<([^>\n]+)>',
-
+        r"From:\s*([^<\n]+?)\s*<([^>\n]+)>",
         # Just email in angle brackets
-        r'From:\s*<([^>]+)>',
-
+        r"From:\s*<([^>]+)>",
         # Email without brackets
-        r'From:\s*([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[A-Z|a-z]{2,})',
+        r"From:\s*([a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[A-Z|a-z]{2,})",
     ]
 
     for pattern in patterns:
@@ -45,26 +41,22 @@ def extract_original_sender(email_body: str) -> Optional[Dict[str, str]]:
 
             if len(groups) == 2:
                 # Has both name and email
-                name = groups[0].strip().strip('"\'')
+                name = groups[0].strip().strip("\"'")
                 email = groups[1].strip()
-                return {
-                    'name': name,
-                    'email': email
-                }
+                return {"name": name, "email": email}
             elif len(groups) == 1:
                 # Just email
                 email = groups[0].strip()
                 # Extract name from email (part before @)
-                name = email.split('@')[0].replace('.', ' ').title()
-                return {
-                    'name': name,
-                    'email': email
-                }
+                name = email.split("@")[0].replace(".", " ").title()
+                return {"name": name, "email": email}
 
     return None
 
 
-def format_sender_display(forwarder: str, original_sender: Optional[Dict[str, str]] = None) -> str:
+def format_sender_display(
+    forwarder: str, original_sender: Optional[Dict[str, str]] = None
+) -> str:
     """
     Format sender information for display
 

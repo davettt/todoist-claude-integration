@@ -1,0 +1,88 @@
+# Project configuration for todoist-python
+# This file configures all our code quality tools
+
+[tool.ruff]
+# Match Black's line length
+line-length = 88
+
+# Don't check these directories
+exclude = [
+    ".git",
+    ".venv",
+    "venv",
+    "__pycache__",
+    "local_data",  # Personal data folder
+    ".mypy_cache",
+    ".pytest_cache",
+    ".ruff_cache",
+]
+
+[tool.ruff.lint]
+# Ruff is our linter - catches bugs and style issues
+# Select which rules to enable:
+# E = pycodestyle errors (PEP 8 violations)
+# F = pyflakes (undefined names, unused imports)
+# I = isort (import sorting)
+# W = pycodestyle warnings
+select = ["E", "F", "I", "W"]
+
+# Ignore some rules:
+ignore = [
+    "E501",  # Line too long (Black handles this)
+]
+
+# Allow unused imports in __init__.py files
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]  # Unused imports are OK here
+
+[tool.black]
+# Black is our formatter - makes code look consistent
+line-length = 88
+target-version = ['py37', 'py38', 'py39', 'py310', 'py311']
+include = '\.pyi?$'
+
+# Don't format these directories
+exclude = '''
+/(
+    \.git
+  | \.venv
+  | venv
+  | __pycache__
+  | local_data
+  | \.mypy_cache
+  | \.pytest_cache
+  | \.ruff_cache
+)/
+'''
+
+[tool.mypy]
+# mypy is our type checker (optional - we'll add this later)
+python_version = "3.7"
+warn_return_any = true
+warn_unused_configs = true
+# Start lenient - we can tighten this later as we add more types
+disallow_untyped_defs = false
+
+# Ignore missing type hints in third-party libraries
+[[tool.mypy.overrides]]
+module = [
+    "google.auth.*",
+    "google_auth_oauthlib.*",
+    "googleapiclient.*",
+    "bs4.*",
+]
+ignore_missing_imports = true
+
+[tool.pytest.ini_options]
+# pytest configuration (for when we add tests later)
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_classes = "Test*"
+python_functions = "test_*"
+addopts = [
+    "--verbose",
+    "--cov=apis",
+    "--cov=utils",
+    "--cov-report=html",
+    "--cov-report=term-missing",
+]

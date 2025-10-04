@@ -3,10 +3,10 @@ Email Feedback Tracker
 Records user feedback on email interest predictions for AI learning
 """
 
-import os
 import json
+import os
 from datetime import datetime
-from typing import Dict, List, Any, Optional
+from typing import Any, Dict, List
 
 
 class EmailFeedbackTracker:
@@ -14,7 +14,7 @@ class EmailFeedbackTracker:
 
     def __init__(self):
         """Initialize feedback tracker"""
-        self.feedback_log_path = 'local_data/personal_data/email_feedback_log.json'
+        self.feedback_log_path = "local_data/personal_data/email_feedback_log.json"
         self.feedback_data = self._load_feedback_log()
 
         # Ensure directory exists
@@ -24,7 +24,7 @@ class EmailFeedbackTracker:
         """Load existing feedback log"""
         if os.path.exists(self.feedback_log_path):
             try:
-                with open(self.feedback_log_path, 'r') as f:
+                with open(self.feedback_log_path, "r") as f:
                     return json.load(f)
             except Exception as e:
                 print(f"⚠️  Could not load feedback log: {str(e)}")
@@ -42,14 +42,14 @@ class EmailFeedbackTracker:
                 "total_feedback_count": 0,
                 "accurate_predictions": 0,
                 "inaccurate_predictions": 0,
-                "current_accuracy": 0.0
-            }
+                "current_accuracy": 0.0,
+            },
         }
 
     def _save_feedback_log(self):
         """Save feedback log to file"""
         try:
-            with open(self.feedback_log_path, 'w') as f:
+            with open(self.feedback_log_path, "w") as f:
                 json.dump(self.feedback_data, f, indent=2)
         except Exception as e:
             print(f"❌ Error saving feedback log: {str(e)}")
@@ -61,7 +61,7 @@ class EmailFeedbackTracker:
         predicted_level: str,
         actual_interest: str,
         feedback_type: str,
-        notes: str = ""
+        notes: str = "",
     ) -> bool:
         """
         Record user feedback on an email prediction
@@ -86,7 +86,9 @@ class EmailFeedbackTracker:
                 "actual_interest": actual_interest,
                 "feedback_type": feedback_type,
                 "notes": notes,
-                "was_accurate": self._determine_accuracy(predicted_level, actual_interest)
+                "was_accurate": self._determine_accuracy(
+                    predicted_level, actual_interest
+                ),
             }
 
             self.feedback_data["feedback_entries"].append(entry)
@@ -112,30 +114,30 @@ class EmailFeedbackTracker:
         """
         # Mapping of feedback to what it means
         accuracy_map = {
-            'useful': {
-                'urgent': True,
-                'high': True,
-                'medium': True,  # If they found it useful, medium was acceptable
-                'low': False     # Should have been higher
+            "useful": {
+                "urgent": True,
+                "high": True,
+                "medium": True,  # If they found it useful, medium was acceptable
+                "low": False,  # Should have been higher
             },
-            'not_interesting': {
-                'urgent': False,
-                'high': False,
-                'medium': False,
-                'low': True      # Correctly identified as low interest
+            "not_interesting": {
+                "urgent": False,
+                "high": False,
+                "medium": False,
+                "low": True,  # Correctly identified as low interest
             },
-            'more_important': {
-                'urgent': False,  # Should have been urgent
-                'high': False,    # Should have been higher
-                'medium': False,
-                'low': False
+            "more_important": {
+                "urgent": False,  # Should have been urgent
+                "high": False,  # Should have been higher
+                "medium": False,
+                "low": False,
             },
-            'less_important': {
-                'urgent': False,  # Was overrated
-                'high': False,
-                'medium': True,   # Medium would have been better
-                'low': True       # Low is correct
-            }
+            "less_important": {
+                "urgent": False,  # Was overrated
+                "high": False,
+                "medium": True,  # Medium would have been better
+                "low": True,  # Low is correct
+            },
         }
 
         return accuracy_map.get(actual, {}).get(predicted, False)
@@ -146,14 +148,14 @@ class EmailFeedbackTracker:
         total = len(entries)
 
         if total > 0:
-            accurate = sum(1 for entry in entries if entry.get('was_accurate', False))
+            accurate = sum(1 for entry in entries if entry.get("was_accurate", False))
             accuracy = (accurate / total) * 100
 
             self.feedback_data["stats"] = {
                 "total_feedback_count": total,
                 "accurate_predictions": accurate,
                 "inaccurate_predictions": total - accurate,
-                "current_accuracy": round(accuracy, 1)
+                "current_accuracy": round(accuracy, 1),
             }
 
     def get_learning_insights(self) -> Dict[str, Any]:
@@ -170,14 +172,14 @@ class EmailFeedbackTracker:
             return {
                 "message": "No feedback data yet. Start providing feedback to see insights!",
                 "stats": stats,
-                "recommendations": []
+                "recommendations": [],
             }
 
         insights = {
             "stats": stats,
             "trends": self._analyze_trends(entries),
             "sender_patterns": self._analyze_sender_patterns(entries),
-            "recommendations": self._generate_recommendations(entries, stats)
+            "recommendations": self._generate_recommendations(entries, stats),
         }
 
         return insights
@@ -190,64 +192,68 @@ class EmailFeedbackTracker:
         # Get recent entries (last 20)
         recent = entries[-20:] if len(entries) > 20 else entries
 
-        recent_accurate = sum(1 for e in recent if e.get('was_accurate', False))
+        recent_accurate = sum(1 for e in recent if e.get("was_accurate", False))
         recent_accuracy = (recent_accurate / len(recent)) * 100 if recent else 0
 
         # Compare to overall accuracy
         overall_accuracy = self.feedback_data["stats"]["current_accuracy"]
-        trend = "improving" if recent_accuracy > overall_accuracy else "stable" if recent_accuracy == overall_accuracy else "declining"
+        trend = (
+            "improving"
+            if recent_accuracy > overall_accuracy
+            else "stable" if recent_accuracy == overall_accuracy else "declining"
+        )
 
         return {
             "recent_accuracy": round(recent_accuracy, 1),
             "overall_accuracy": overall_accuracy,
             "trend": trend,
-            "recent_feedback_count": len(recent)
+            "recent_feedback_count": len(recent),
         }
 
-    def _analyze_sender_patterns(self, entries: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    def _analyze_sender_patterns(
+        self, entries: List[Dict[str, Any]]
+    ) -> List[Dict[str, Any]]:
         """Analyze patterns by sender"""
         sender_stats = {}
 
         for entry in entries:
-            sender = entry.get('email_from', 'Unknown')
+            sender = entry.get("email_from", "Unknown")
             if sender not in sender_stats:
-                sender_stats[sender] = {
-                    'total': 0,
-                    'accurate': 0,
-                    'useful_count': 0
-                }
+                sender_stats[sender] = {"total": 0, "accurate": 0, "useful_count": 0}
 
-            sender_stats[sender]['total'] += 1
-            if entry.get('was_accurate', False):
-                sender_stats[sender]['accurate'] += 1
-            if entry.get('actual_interest') == 'useful':
-                sender_stats[sender]['useful_count'] += 1
+            sender_stats[sender]["total"] += 1
+            if entry.get("was_accurate", False):
+                sender_stats[sender]["accurate"] += 1
+            if entry.get("actual_interest") == "useful":
+                sender_stats[sender]["useful_count"] += 1
 
         # Convert to list and calculate accuracy
         patterns = []
         for sender, stats in sender_stats.items():
-            accuracy = (stats['accurate'] / stats['total'] * 100) if stats['total'] > 0 else 0
-            patterns.append({
-                'sender': sender,
-                'total_emails': stats['total'],
-                'accuracy': round(accuracy, 1),
-                'useful_emails': stats['useful_count']
-            })
+            accuracy = (
+                (stats["accurate"] / stats["total"] * 100) if stats["total"] > 0 else 0
+            )
+            patterns.append(
+                {
+                    "sender": sender,
+                    "total_emails": stats["total"],
+                    "accuracy": round(accuracy, 1),
+                    "useful_emails": stats["useful_count"],
+                }
+            )
 
         # Sort by total emails (most frequent senders first)
-        patterns.sort(key=lambda x: x['total_emails'], reverse=True)
+        patterns.sort(key=lambda x: x["total_emails"], reverse=True)
 
         return patterns[:10]  # Top 10 senders
 
     def _generate_recommendations(
-        self,
-        entries: List[Dict[str, Any]],
-        stats: Dict[str, Any]
+        self, entries: List[Dict[str, Any]], stats: Dict[str, Any]
     ) -> List[str]:
         """Generate recommendations based on feedback"""
         recommendations = []
 
-        accuracy = stats.get('current_accuracy', 0)
+        accuracy = stats.get("current_accuracy", 0)
 
         if accuracy < 60:
             recommendations.append(
@@ -263,7 +269,7 @@ class EmailFeedbackTracker:
             )
 
         # Check for specific patterns
-        frequent_misses = [e for e in entries[-20:] if not e.get('was_accurate', False)]
+        frequent_misses = [e for e in entries[-20:] if not e.get("was_accurate", False)]
 
         if len(frequent_misses) > 10:
             recommendations.append(
@@ -271,7 +277,7 @@ class EmailFeedbackTracker:
             )
 
         # Check if enough feedback provided
-        if stats.get('total_feedback_count', 0) < 20:
+        if stats.get("total_feedback_count", 0) < 20:
             recommendations.append(
                 "📊 Provide more feedback (20+ emails) for better AI learning."
             )
@@ -289,45 +295,55 @@ class EmailFeedbackTracker:
         lines = []
 
         lines.append("# Email Digest Learning Report")
-        lines.append(f"**Generated:** {datetime.now().strftime('%B %d, %Y at %I:%M %p')}")
+        lines.append(
+            f"**Generated:** {datetime.now().strftime('%B %d, %Y at %I:%M %p')}"
+        )
         lines.append("")
 
         # Stats
         lines.append("## Overall Statistics")
         lines.append("")
-        stats = insights['stats']
-        lines.append(f"- **Total Feedback:** {stats.get('total_feedback_count', 0)} emails")
-        lines.append(f"- **Accurate Predictions:** {stats.get('accurate_predictions', 0)}")
-        lines.append(f"- **Inaccurate Predictions:** {stats.get('inaccurate_predictions', 0)}")
+        stats = insights["stats"]
+        lines.append(
+            f"- **Total Feedback:** {stats.get('total_feedback_count', 0)} emails"
+        )
+        lines.append(
+            f"- **Accurate Predictions:** {stats.get('accurate_predictions', 0)}"
+        )
+        lines.append(
+            f"- **Inaccurate Predictions:** {stats.get('inaccurate_predictions', 0)}"
+        )
         lines.append(f"- **Current Accuracy:** {stats.get('current_accuracy', 0)}%")
         lines.append("")
 
         # Trends
-        if 'trends' in insights:
+        if "trends" in insights:
             lines.append("## Trends")
             lines.append("")
-            trends = insights['trends']
+            trends = insights["trends"]
             lines.append(f"- **Recent Accuracy:** {trends.get('recent_accuracy', 0)}%")
             lines.append(f"- **Trend:** {trends.get('trend', 'unknown').title()}")
             lines.append("")
 
         # Sender patterns
-        if 'sender_patterns' in insights:
-            patterns = insights['sender_patterns']
+        if "sender_patterns" in insights:
+            patterns = insights["sender_patterns"]
             if patterns:
                 lines.append("## Top Senders")
                 lines.append("")
                 for pattern in patterns[:5]:
-                    sender = pattern['sender']
-                    total = pattern['total_emails']
-                    accuracy = pattern['accuracy']
-                    useful = pattern['useful_emails']
-                    lines.append(f"- **{sender}:** {total} emails, {accuracy}% accurate, {useful} useful")
+                    sender = pattern["sender"]
+                    total = pattern["total_emails"]
+                    accuracy = pattern["accuracy"]
+                    useful = pattern["useful_emails"]
+                    lines.append(
+                        f"- **{sender}:** {total} emails, {accuracy}% accurate, {useful} useful"
+                    )
                 lines.append("")
 
         # Recommendations
-        if 'recommendations' in insights:
-            recs = insights['recommendations']
+        if "recommendations" in insights:
+            recs = insights["recommendations"]
             if recs:
                 lines.append("## Recommendations")
                 lines.append("")
@@ -335,4 +351,4 @@ class EmailFeedbackTracker:
                     lines.append(f"- {rec}")
                 lines.append("")
 
-        return '\n'.join(lines)
+        return "\n".join(lines)

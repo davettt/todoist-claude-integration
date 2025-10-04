@@ -3,12 +3,10 @@ Gmail API client for email processing operations
 Follows OAuth2 pattern from google_calendar_client.py
 """
 
-import os
 import base64
-import json
+import os
 from datetime import datetime
-from typing import Dict, Any, List, Optional
-from email import message_from_string
+from typing import Any, Dict, List, Optional
 
 
 class GmailClient:
@@ -23,20 +21,18 @@ class GmailClient:
         """Initialize Gmail service with OAuth2 authentication"""
         try:
             # Import Google API libraries
+            from google.auth.transport.requests import Request
             from google.oauth2.credentials import Credentials
             from google_auth_oauthlib.flow import InstalledAppFlow
-            from google.auth.transport.requests import Request
             from googleapiclient.discovery import build
 
             # Gmail API scopes
             # Using full gmail scope to enable read, modify, and delete operations
-            SCOPES = [
-                'https://mail.google.com/'
-            ]
+            SCOPES = ["https://mail.google.com/"]
 
             creds = None
-            token_path = 'local_data/gmail_token.json'
-            credentials_path = 'local_data/gmail_credentials.json'
+            token_path = "local_data/gmail_token.json"
+            credentials_path = "local_data/gmail_credentials.json"
 
             # Load existing token
             if os.path.exists(token_path):
@@ -54,14 +50,16 @@ class GmailClient:
                             "Note: Can use same credentials as calendar (calendar_credentials.json) if in same project"
                         )
 
-                    flow = InstalledAppFlow.from_client_secrets_file(credentials_path, SCOPES)
+                    flow = InstalledAppFlow.from_client_secrets_file(
+                        credentials_path, SCOPES
+                    )
                     creds = flow.run_local_server(port=0)
 
                 # Save credentials for next run
-                with open(token_path, 'w') as token:
+                with open(token_path, "w") as token:
                     token.write(creds.to_json())
 
-            self.gmail_service = build('gmail', 'v1', credentials=creds)
+            self.gmail_service = build("gmail", "v1", credentials=creds)
 
         except ImportError:
             raise ValueError(
@@ -79,7 +77,9 @@ class GmailClient:
             log_message += f" - {details}"
         print(f"📝 {log_message}")
 
-    def get_unread_messages(self, max_results: int = 10) -> Optional[List[Dict[str, Any]]]:
+    def get_unread_messages(
+        self, max_results: int = 10
+    ) -> Optional[List[Dict[str, Any]]]:
         """
         Fetch unread messages from Gmail inbox
 
@@ -90,13 +90,14 @@ class GmailClient:
             List of message metadata (id, threadId) or None if error
         """
         try:
-            results = self.gmail_service.users().messages().list(
-                userId='me',
-                labelIds=['INBOX', 'UNREAD'],
-                maxResults=max_results
-            ).execute()
+            results = (
+                self.gmail_service.users()
+                .messages()
+                .list(userId="me", labelIds=["INBOX", "UNREAD"], maxResults=max_results)
+                .execute()
+            )
 
-            messages = results.get('messages', [])
+            messages = results.get("messages", [])
             self.log_operation("Fetched unread messages", f"{len(messages)} messages")
             return messages
 
@@ -115,27 +116,28 @@ class GmailClient:
             Message details dict with headers and body, or None if error
         """
         try:
-            message = self.gmail_service.users().messages().get(
-                userId='me',
-                id=message_id,
-                format='full'
-            ).execute()
+            message = (
+                self.gmail_service.users()
+                .messages()
+                .get(userId="me", id=message_id, format="full")
+                .execute()
+            )
 
             # Extract headers
             headers = {}
-            for header in message['payload'].get('headers', []):
-                headers[header['name'].lower()] = header['value']
+            for header in message["payload"].get("headers", []):
+                headers[header["name"].lower()] = header["value"]
 
             # Extract body
-            body = self._extract_body(message['payload'])
+            body = self._extract_body(message["payload"])
 
             result = {
-                'id': message['id'],
-                'thread_id': message['threadId'],
-                'headers': headers,
-                'body': body,
-                'snippet': message.get('snippet', ''),
-                'internal_date': message.get('internalDate', '')
+                "id": message["id"],
+                "thread_id": message["threadId"],
+                "headers": headers,
+                "body": body,
+                "snippet": message.get("snippet", ""),
+                "internal_date": message.get("internalDate", ""),
             }
 
             self.log_operation("Fetched message details", f"ID: {message_id[:10]}...")
@@ -155,26 +157,26 @@ class GmailClient:
         Returns:
             Decoded email body text
         """
-        body = ''
+        body = ""
 
         # Check if multipart
-        if 'parts' in payload:
-            for part in payload['parts']:
+        if "parts" in payload:
+            for part in payload["parts"]:
                 # Recursively extract from parts
-                if part.get('mimeType') == 'text/plain':
-                    if 'data' in part.get('body', {}):
-                        body += self._decode_body(part['body']['data'])
-                elif part.get('mimeType') == 'text/html' and not body:
+                if part.get("mimeType") == "text/plain":
+                    if "data" in part.get("body", {}):
+                        body += self._decode_body(part["body"]["data"])
+                elif part.get("mimeType") == "text/html" and not body:
                     # Use HTML only if no plain text found
-                    if 'data' in part.get('body', {}):
-                        body += self._decode_body(part['body']['data'])
-                elif 'parts' in part:
+                    if "data" in part.get("body", {}):
+                        body += self._decode_body(part["body"]["data"])
+                elif "parts" in part:
                     # Nested multipart
                     body += self._extract_body(part)
         else:
             # Simple message
-            if 'data' in payload.get('body', {}):
-                body = self._decode_body(payload['body']['data'])
+            if "data" in payload.get("body", {}):
+                body = self._decode_body(payload["body"]["data"])
 
         return body
 
@@ -193,18 +195,18 @@ class GmailClient:
             decoded_bytes = base64.urlsafe_b64decode(data)
 
             # Try UTF-8 first, then fall back to other encodings
-            for encoding in ['utf-8', 'iso-8859-1', 'ascii']:
+            for encoding in ["utf-8", "iso-8859-1", "ascii"]:
                 try:
                     return decoded_bytes.decode(encoding)
                 except UnicodeDecodeError:
                     continue
 
             # Last resort: decode with errors='ignore'
-            return decoded_bytes.decode('utf-8', errors='ignore')
+            return decoded_bytes.decode("utf-8", errors="ignore")
 
         except Exception as e:
             print(f"⚠️ Error decoding message body: {str(e)}")
-            return ''
+            return ""
 
     def mark_as_read(self, message_id: str) -> bool:
         """
@@ -218,9 +220,7 @@ class GmailClient:
         """
         try:
             self.gmail_service.users().messages().modify(
-                userId='me',
-                id=message_id,
-                body={'removeLabelIds': ['UNREAD']}
+                userId="me", id=message_id, body={"removeLabelIds": ["UNREAD"]}
             ).execute()
 
             self.log_operation("Marked as read", f"ID: {message_id[:10]}...")
@@ -242,9 +242,7 @@ class GmailClient:
         """
         try:
             self.gmail_service.users().messages().modify(
-                userId='me',
-                id=message_id,
-                body={'removeLabelIds': ['UNREAD', 'INBOX']}
+                userId="me", id=message_id, body={"removeLabelIds": ["UNREAD", "INBOX"]}
             ).execute()
 
             self.log_operation("Archived message", f"ID: {message_id[:10]}...")
@@ -266,8 +264,7 @@ class GmailClient:
         """
         try:
             self.gmail_service.users().messages().trash(
-                userId='me',
-                id=message_id
+                userId="me", id=message_id
             ).execute()
 
             self.log_operation("Trashed message", f"ID: {message_id[:10]}...")
@@ -290,11 +287,12 @@ class GmailClient:
         """
         try:
             self.gmail_service.users().messages().delete(
-                userId='me',
-                id=message_id
+                userId="me", id=message_id
             ).execute()
 
-            self.log_operation("Permanently deleted message", f"ID: {message_id[:10]}...")
+            self.log_operation(
+                "Permanently deleted message", f"ID: {message_id[:10]}..."
+            )
             return True
 
         except Exception as e:
@@ -317,14 +315,11 @@ class GmailClient:
         match = re.match(r'^"?([^"<]+)"?\s*<([^>]+)>$', from_header.strip())
 
         if match:
-            return {
-                'name': match.group(1).strip(),
-                'email': match.group(2).strip()
-            }
+            return {"name": match.group(1).strip(), "email": match.group(2).strip()}
         else:
             # Just an email address
             email = from_header.strip()
             return {
-                'name': email.split('@')[0],  # Use part before @ as name
-                'email': email
+                "name": email.split("@")[0],  # Use part before @ as name
+                "email": email,
             }

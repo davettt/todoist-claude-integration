@@ -4,9 +4,8 @@ Biweekly Email Digest Generator
 Processes emails from Gmail assistant inbox and generates AI-powered digest
 """
 
-import sys
 import os
-from datetime import datetime, timedelta
+import sys
 
 # Add current directory to path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -28,7 +27,7 @@ def has_task_marker(subject: str) -> bool:
         True if has [TASK] or #task marker
     """
     subject_lower = subject.lower()
-    return '[task]' in subject_lower or '#task' in subject_lower
+    return "[task]" in subject_lower or "#task" in subject_lower
 
 
 def fetch_digest_emails(days_back: int = 14) -> list:
@@ -60,15 +59,15 @@ def fetch_digest_emails(days_back: int = 14) -> list:
         task_email_count = 0
 
         for message in messages:
-            details = gmail_client.get_message_details(message['id'])
+            details = gmail_client.get_message_details(message["id"])
             if not details:
                 continue
 
             # Extract metadata
-            headers = details['headers']
-            subject = headers.get('subject', '(No Subject)')
-            from_header = headers.get('from', 'Unknown')
-            date = headers.get('date', '')
+            headers = details["headers"]
+            subject = headers.get("subject", "(No Subject)")
+            from_header = headers.get("from", "Unknown")
+            date = headers.get("date", "")
 
             # Skip task emails
             if has_task_marker(subject):
@@ -80,21 +79,25 @@ def fetch_digest_emails(days_back: int = 14) -> list:
             forwarder = f"{forwarder_info['name']} <{forwarder_info['email']}>"
 
             # Try to extract original sender from forwarded email body
-            original_sender = extract_original_sender(details['body'])
+            original_sender = extract_original_sender(details["body"])
 
             # Add to digest list
-            digest_emails.append({
-                'id': details['id'],
-                'subject': subject,
-                'forwarder': forwarder,
-                'forwarder_email': forwarder_info['email'],
-                'original_sender': original_sender,
-                'date': date,
-                'body': details['body']
-            })
+            digest_emails.append(
+                {
+                    "id": details["id"],
+                    "subject": subject,
+                    "forwarder": forwarder,
+                    "forwarder_email": forwarder_info["email"],
+                    "original_sender": original_sender,
+                    "date": date,
+                    "body": details["body"],
+                }
+            )
 
         print(f"✅ Collected {len(digest_emails)} emails for digest")
-        print(f"   Skipped {task_email_count} task emails (have [TASK] or #task marker)")
+        print(
+            f"   Skipped {task_email_count} task emails (have [TASK] or #task marker)"
+        )
         print()
 
         return digest_emails
@@ -178,18 +181,18 @@ def main():
 
                 for email in emails:
                     try:
-                        gmail_client.mark_as_read(email['id'])
+                        gmail_client.mark_as_read(email["id"])
                         marked_count += 1
-                    except Exception as e:
+                    except Exception:
                         print(f"   ⚠️  Failed to mark {email['subject'][:40]}...")
 
                 print(f"   ✅ Marked {marked_count}/{len(emails)} emails as read")
                 print()
 
             print("📝 Next steps:")
-            print(f"  • Return to daily manager")
-            print(f"  • Choose option 6 to review digest interactively")
-            print(f"  • Rate each email to help AI learn your preferences")
+            print("  • Return to daily manager")
+            print("  • Choose option 6 to review digest interactively")
+            print("  • Rate each email to help AI learn your preferences")
             print()
             print("💡 Tip: Interactive review lets you read, rate, and")
             print("   archive/delete emails all in one seamless flow!")
@@ -215,7 +218,9 @@ def main():
         print("📝 Setup Instructions:")
         print("  1. Get Anthropic API key from: https://console.anthropic.com/")
         print("  2. Add to .env file: ANTHROPIC_API_KEY=your-key-here")
-        print("  3. Configure interests in: local_data/personal_data/email_interest_profile.json")
+        print(
+            "  3. Configure interests in: local_data/personal_data/email_interest_profile.json"
+        )
         print("  4. Re-run this script")
         print()
 
@@ -223,9 +228,10 @@ def main():
         print()
         print(f"❌ Unexpected error: {str(e)}")
         import traceback
+
         traceback.print_exc()
         print()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

@@ -3,10 +3,11 @@ Claude API Client
 Handles communication with Anthropic's Claude API for email analysis
 """
 
-import os
 import json
+import os
+from typing import Any, Dict, Optional
+
 import requests
-from typing import Dict, Any, Optional, List
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -17,7 +18,7 @@ class ClaudeAPIClient:
 
     def __init__(self):
         """Initialize Claude API client with API key from environment"""
-        self.api_key = os.getenv('ANTHROPIC_API_KEY')
+        self.api_key = os.getenv("ANTHROPIC_API_KEY")
         if not self.api_key:
             raise ValueError(
                 "❌ ANTHROPIC_API_KEY not found!\n"
@@ -26,16 +27,16 @@ class ClaudeAPIClient:
             )
 
         self.api_url = "https://api.anthropic.com/v1/messages"
-        self.model = os.getenv('CLAUDE_MODEL', 'claude-sonnet-4-20250514')
-        self.max_tokens = int(os.getenv('CLAUDE_MAX_TOKENS', '2000'))
-        self.temperature = float(os.getenv('CLAUDE_TEMPERATURE', '0.3'))
+        self.model = os.getenv("CLAUDE_MODEL", "claude-sonnet-4-20250514")
+        self.max_tokens = int(os.getenv("CLAUDE_MAX_TOKENS", "2000"))
+        self.temperature = float(os.getenv("CLAUDE_TEMPERATURE", "0.3"))
 
     def analyze_email_interest(
         self,
         email_content: str,
         email_subject: str,
         email_from: str,
-        user_profile: Dict[str, Any]
+        user_profile: Dict[str, Any],
     ) -> Optional[Dict[str, Any]]:
         """
         Analyze email for interest level and extract key points
@@ -71,22 +72,26 @@ class ClaudeAPIClient:
         email_content: str,
         email_subject: str,
         email_from: str,
-        user_profile: Dict[str, Any]
+        user_profile: Dict[str, Any],
     ) -> str:
         """Build prompt for interest analysis"""
 
         # Extract user context
-        core_interests = user_profile.get('core_interests', [])
-        active_projects = user_profile.get('active_projects', [])
-        trusted_senders = user_profile.get('trusted_senders', [])
-        trusted_forwarders = user_profile.get('trusted_forwarders', [])
-        urgency_keywords = user_profile.get('urgency_keywords', [])
-        auto_skip_keywords = user_profile.get('auto_skip_keywords', [])
-        is_trusted_sender = user_profile.get('current_sender_is_trusted', False)
-        is_from_user = user_profile.get('forwarded_by_user', True)
+        core_interests = user_profile.get("core_interests", [])
+        active_projects = user_profile.get("active_projects", [])
+        trusted_senders = user_profile.get("trusted_senders", [])
+        trusted_forwarders = user_profile.get("trusted_forwarders", [])
+        urgency_keywords = user_profile.get("urgency_keywords", [])
+        auto_skip_keywords = user_profile.get("auto_skip_keywords", [])
+        is_trusted_sender = user_profile.get("current_sender_is_trusted", False)
+        is_from_user = user_profile.get("forwarded_by_user", True)
 
         sender_trust = "✓ TRUSTED SENDER" if is_trusted_sender else "⚠ Unknown sender"
-        forwarder_trust = "✓ Forwarded by user" if is_from_user else "⚠️ NOT from user's accounts (suspicious!)"
+        forwarder_trust = (
+            "✓ Forwarded by user"
+            if is_from_user
+            else "⚠️ NOT from user's accounts (suspicious!)"
+        )
 
         prompt = f"""You are analyzing an email to determine if the user would find it interesting and worth reading.
 
@@ -171,33 +176,25 @@ Respond ONLY with valid JSON. No backticks, no markdown, ONLY JSON."""
         """
         try:
             headers = {
-                'x-api-key': self.api_key,
-                'anthropic-version': '2023-06-01',
-                'content-type': 'application/json'
+                "x-api-key": self.api_key,
+                "anthropic-version": "2023-06-01",
+                "content-type": "application/json",
             }
 
             data = {
-                'model': self.model,
-                'max_tokens': self.max_tokens,
-                'temperature': self.temperature,
-                'messages': [
-                    {
-                        'role': 'user',
-                        'content': prompt
-                    }
-                ]
+                "model": self.model,
+                "max_tokens": self.max_tokens,
+                "temperature": self.temperature,
+                "messages": [{"role": "user", "content": prompt}],
             }
 
             response = requests.post(
-                self.api_url,
-                headers=headers,
-                json=data,
-                timeout=30
+                self.api_url, headers=headers, json=data, timeout=30
             )
 
             if response.status_code == 200:
                 response_data = response.json()
-                content = response_data['content'][0]['text']
+                content = response_data["content"][0]["text"]
                 return content
             elif response.status_code == 429:
                 print("⚠️  Rate limit exceeded. Please wait before retrying.")
@@ -235,34 +232,34 @@ Respond ONLY with valid JSON. No backticks, no markdown, ONLY JSON."""
             response_text = api_response.strip()
 
             # Remove markdown code fences if present
-            if response_text.startswith('```'):
+            if response_text.startswith("```"):
                 # Find the first newline and last ```
-                lines = response_text.split('\n')
-                if lines[0].startswith('```'):
+                lines = response_text.split("\n")
+                if lines[0].startswith("```"):
                     lines = lines[1:]  # Remove first ```json or ```
-                if lines[-1].strip() == '```':
+                if lines[-1].strip() == "```":
                     lines = lines[:-1]  # Remove last ```
-                response_text = '\n'.join(lines)
+                response_text = "\n".join(lines)
 
             # Parse JSON
             analysis = json.loads(response_text)
 
             # Validate required fields
-            required_fields = ['level', 'category', 'bullets', 'overall_reasoning']
+            required_fields = ["level", "category", "bullets", "overall_reasoning"]
             for field in required_fields:
                 if field not in analysis:
                     print(f"⚠️  Missing field in analysis: {field}")
                     return None
 
             # Validate interest level
-            valid_levels = ['urgent', 'high', 'medium', 'low']
-            if analysis['level'] not in valid_levels:
+            valid_levels = ["urgent", "high", "medium", "low"]
+            if analysis["level"] not in valid_levels:
                 print(f"⚠️  Invalid interest level: {analysis['level']}")
-                analysis['level'] = 'medium'  # Default fallback
+                analysis["level"] = "medium"  # Default fallback
 
             # Ensure bullets is a list
-            if not isinstance(analysis['bullets'], list):
-                analysis['bullets'] = []
+            if not isinstance(analysis["bullets"], list):
+                analysis["bullets"] = []
 
             return analysis
 
@@ -300,12 +297,12 @@ Respond ONLY with valid JSON. No backticks, no markdown, ONLY JSON."""
         total_cost = input_cost + output_cost
 
         return {
-            'email_count': email_count,
-            'estimated_input_tokens': total_input_tokens,
-            'estimated_output_tokens': total_output_tokens,
-            'estimated_input_cost': input_cost,
-            'estimated_output_cost': output_cost,
-            'estimated_total_cost': total_cost
+            "email_count": email_count,
+            "estimated_input_tokens": total_input_tokens,
+            "estimated_output_tokens": total_output_tokens,
+            "estimated_input_cost": input_cost,
+            "estimated_output_cost": output_cost,
+            "estimated_total_cost": total_cost,
         }
 
     def test_connection(self) -> bool:

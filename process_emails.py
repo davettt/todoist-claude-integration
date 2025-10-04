@@ -23,8 +23,8 @@ def main():
 
         # Show current stats
         stats = processor.get_interaction_stats()
-        if stats['total_emails'] > 0:
-            print(f"📊 Previous Activity:")
+        if stats["total_emails"] > 0:
+            print("📊 Previous Activity:")
             print(f"   • {stats['total_emails']} emails processed total")
             print(f"   • {stats['unique_senders']} unique senders")
             print()
@@ -78,8 +78,9 @@ def main():
         print(f"❌ Error: {str(e)}")
         print()
         import traceback
+
         traceback.print_exc()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

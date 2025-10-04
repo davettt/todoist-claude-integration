@@ -1,0 +1,14 @@
+# Development Dependencies for todoist-python
+# Install with: pip install -r requirements-dev.txt
+
+# Code Quality Tools
+ruff>=0.1.0          # Fast linter (replaces flake8, pylint, isort)
+black>=23.0.0        # Code formatter (opinionated, consistent)
+mypy>=1.0.0          # Type checker (optional - validates type hints)
+
+# Testing Tools (for future use)
+pytest>=7.0.0        # Testing framework
+pytest-cov>=4.0.0    # Coverage reporting
+
+# Note: These are only needed for development
+# Production deployments only need requirements.txt

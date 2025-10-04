@@ -4,24 +4,23 @@ Email Processing Pipeline
 Coordinates Gmail API, sanitization, and operation file creation
 """
 
-import os
 import json
+import os
 import sys
 from datetime import datetime
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
 
 # Add current directory to path
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from apis.gmail_client import GmailClient
 from utils.email_sanitizer import (
-    sanitize_email_content,
-    html_to_text,
     extract_sender_info,
+    get_sanitization_summary,
+    html_to_text,
     is_content_safe,
-    get_sanitization_summary
+    sanitize_email_content,
 )
-from utils.file_manager import archive_processed_file
 
 
 def has_task_marker(subject: str) -> bool:
@@ -35,7 +34,7 @@ def has_task_marker(subject: str) -> bool:
         True if has [TASK] or #task marker
     """
     subject_lower = subject.lower()
-    return '[task]' in subject_lower or '#task' in subject_lower
+    return "[task]" in subject_lower or "#task" in subject_lower
 
 
 class EmailProcessor:
@@ -43,22 +42,24 @@ class EmailProcessor:
 
     def __init__(self):
         self.gmail_client = None
-        self.interactions_log_path = 'local_data/personal_data/email_interactions_log.json'
-        self.pending_operations_dir = 'local_data/pending_operations'
+        self.interactions_log_path = (
+            "local_data/personal_data/email_interactions_log.json"
+        )
+        self.pending_operations_dir = "local_data/pending_operations"
         self.interactions = []
         self._ensure_data_directory()
         self._load_interactions_log()
 
     def _ensure_data_directory(self):
         """Create necessary directories if they don't exist"""
-        os.makedirs('local_data/personal_data', exist_ok=True)
+        os.makedirs("local_data/personal_data", exist_ok=True)
         os.makedirs(self.pending_operations_dir, exist_ok=True)
 
     def _load_interactions_log(self):
         """Load existing email interactions log"""
         if os.path.exists(self.interactions_log_path):
             try:
-                with open(self.interactions_log_path, 'r') as f:
+                with open(self.interactions_log_path, "r") as f:
                     self.interactions = json.load(f)
                 print(f"📋 Loaded {len(self.interactions)} previous interactions")
             except json.JSONDecodeError:
@@ -70,7 +71,7 @@ class EmailProcessor:
     def _save_interactions_log(self):
         """Save email interactions log"""
         try:
-            with open(self.interactions_log_path, 'w') as f:
+            with open(self.interactions_log_path, "w") as f:
                 json.dump(self.interactions, f, indent=2)
             print(f"💾 Saved interactions log ({len(self.interactions)} total)")
         except Exception as e:
@@ -86,7 +87,9 @@ class EmailProcessor:
                 print(f"❌ Gmail initialization failed: {str(e)}")
                 raise
 
-    def process_new_emails(self, max_emails: int = 10, mark_as_read: bool = True) -> List[Dict[str, Any]]:
+    def process_new_emails(
+        self, max_emails: int = 10, mark_as_read: bool = True
+    ) -> List[Dict[str, Any]]:
         """
         Main entry point: Process unread emails from Gmail
 
@@ -135,7 +138,9 @@ class EmailProcessor:
 
         return results
 
-    def _process_single_email(self, message: Dict[str, Any], mark_as_read: bool = True) -> Optional[Dict[str, Any]]:
+    def _process_single_email(
+        self, message: Dict[str, Any], mark_as_read: bool = True
+    ) -> Optional[Dict[str, Any]]:
         """
         Process a single email through the pipeline
 
@@ -148,16 +153,16 @@ class EmailProcessor:
         """
         try:
             # 1. Get full message details
-            details = self.gmail_client.get_message_details(message['id'])
+            details = self.gmail_client.get_message_details(message["id"])
             if not details:
                 print("❌ Failed to fetch message details")
                 return None
 
             # 2. Extract metadata
-            headers = details['headers']
-            from_header = headers.get('from', 'Unknown <unknown@unknown.com>')
-            subject = headers.get('subject', '(No Subject)')
-            date_str = headers.get('date', datetime.now().isoformat())
+            headers = details["headers"]
+            from_header = headers.get("from", "Unknown <unknown@unknown.com>")
+            subject = headers.get("subject", "(No Subject)")
+            date_str = headers.get("date", datetime.now().isoformat())
 
             sender_info = extract_sender_info(from_header)
 
@@ -170,10 +175,10 @@ class EmailProcessor:
             print(f"🏷️  Type: {marker_type}")
 
             # 3. Get email body
-            body = details['body']
+            body = details["body"]
 
             # If body looks like HTML, convert to text
-            if body and ('<html' in body.lower() or '<div' in body.lower()):
+            if body and ("<html" in body.lower() or "<div" in body.lower()):
                 print("🔄 Converting HTML to text...")
                 body = html_to_text(body)
 
@@ -204,23 +209,25 @@ class EmailProcessor:
                     sender_info=sender_info,
                     subject=subject,
                     date=date_str,
-                    sanitized_body=sanitized_body
+                    sanitized_body=sanitized_body,
                 )
             else:
-                print("ℹ️  Newsletter email - process with digest system (biweekly_email_digest.py)")
+                print(
+                    "ℹ️  Newsletter email - process with digest system (biweekly_email_digest.py)"
+                )
 
             # 6. Log interaction
             interaction = {
-                "email_id": message['id'],
+                "email_id": message["id"],
                 "date_received": date_str,
-                "from_address": sender_info['email'],
-                "from_name": sender_info['name'],
+                "from_address": sender_info["email"],
+                "from_name": sender_info["name"],
                 "subject": subject,
                 "processed_date": datetime.now().isoformat(),
                 "is_task_email": is_task_email,
                 "operation_file": operation_file,
                 "sanitization_summary": sanitization_summary,
-                "status": "processed"
+                "status": "processed",
             }
 
             self.interactions.append(interaction)
@@ -228,7 +235,7 @@ class EmailProcessor:
 
             # 7. Mark as read (or delete based on configuration)
             if mark_as_read:
-                self.gmail_client.mark_as_read(message['id'])
+                self.gmail_client.mark_as_read(message["id"])
                 print("✅ Marked as read")
 
             if operation_file:
@@ -237,20 +244,22 @@ class EmailProcessor:
                 print("✅ Email logged (for digest processing)")
 
             return {
-                'message_id': message['id'],
-                'from': sender_info,
-                'subject': subject,
-                'operation_file': operation_file
+                "message_id": message["id"],
+                "from": sender_info,
+                "subject": subject,
+                "operation_file": operation_file,
             }
 
         except Exception as e:
             print(f"❌ Error processing email: {str(e)}")
             import traceback
+
             traceback.print_exc()
             return None
 
-    def _create_operation_file(self, sender_info: Dict[str, str], subject: str,
-                               date: str, sanitized_body: str) -> str:
+    def _create_operation_file(
+        self, sender_info: Dict[str, str], subject: str, date: str, sanitized_body: str
+    ) -> str:
         """
         Create operation file with sanitized email content
 
@@ -271,31 +280,33 @@ class EmailProcessor:
             "generated_at": datetime.now().isoformat(),
             "source": "email_processor",
             "email_metadata": {
-                "from_name": sender_info['name'],
-                "from_email": sender_info['email'],
+                "from_name": sender_info["name"],
+                "from_email": sender_info["email"],
                 "subject": subject,
-                "date": date
+                "date": date,
             },
             "sanitized_content": sanitized_body,
             "instructions": {
                 "for_claude": "Extract action items as tasks and meeting requests as calendar events",
-                "security_note": "Content has been sanitized - all URLs and email addresses removed"
+                "security_note": "Content has been sanitized - all URLs and email addresses removed",
             },
             "new_tasks": [],
             "calendar_events": [],
-            "notes": "This file requires manual review or Claude processing to extract tasks/events"
+            "notes": "This file requires manual review or Claude processing to extract tasks/events",
         }
 
         # Create filename with timestamp
-        timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
-        safe_subject = "".join(c for c in subject if c.isalnum() or c in (' ', '-', '_'))[:30]
-        safe_subject = safe_subject.replace(' ', '_')
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        safe_subject = "".join(
+            c for c in subject if c.isalnum() or c in (" ", "-", "_")
+        )[:30]
+        safe_subject = safe_subject.replace(" ", "_")
 
         filename = f"tasks_email_{safe_subject}_{timestamp}.json"
         filepath = os.path.join(self.pending_operations_dir, filename)
 
         # Save file to pending_operations directory
-        with open(filepath, 'w') as f:
+        with open(filepath, "w") as f:
             json.dump(operation, f, indent=2)
 
         return filename
@@ -308,25 +319,23 @@ class EmailProcessor:
             Dict with interaction statistics
         """
         if not self.interactions:
-            return {
-                'total_emails': 0,
-                'unique_senders': 0,
-                'date_range': None
-            }
+            return {"total_emails": 0, "unique_senders": 0, "date_range": None}
 
         # Get unique senders
-        unique_senders = set(interaction['from_address'] for interaction in self.interactions)
+        unique_senders = set(
+            interaction["from_address"] for interaction in self.interactions
+        )
 
         # Get date range
-        dates = [interaction['processed_date'] for interaction in self.interactions]
+        dates = [interaction["processed_date"] for interaction in self.interactions]
         dates.sort()
 
         return {
-            'total_emails': len(self.interactions),
-            'unique_senders': len(unique_senders),
-            'senders': list(unique_senders),
-            'first_processed': dates[0] if dates else None,
-            'last_processed': dates[-1] if dates else None
+            "total_emails": len(self.interactions),
+            "unique_senders": len(unique_senders),
+            "senders": list(unique_senders),
+            "first_processed": dates[0] if dates else None,
+            "last_processed": dates[-1] if dates else None,
         }
 
 
@@ -339,11 +348,11 @@ def main():
 
     # Show stats
     stats = processor.get_interaction_stats()
-    print(f"\n📊 Email Statistics:")
+    print("\n📊 Email Statistics:")
     print(f"   • Total processed: {stats['total_emails']}")
     print(f"   • Unique senders: {stats['unique_senders']}")
 
-    if stats['total_emails'] > 0:
+    if stats["total_emails"] > 0:
         print(f"   • First: {stats['first_processed']}")
         print(f"   • Last: {stats['last_processed']}")
 
@@ -361,8 +370,9 @@ def main():
     except Exception as e:
         print(f"\n❌ Processing failed: {str(e)}")
         import traceback
+
         traceback.print_exc()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

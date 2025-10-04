@@ -59,3 +59,12 @@ local_data/personal_data/email_feedback_log.json
 
 # Personal roadmap (optional - uncomment if you don't want to push it)
 ROADMAP_personal.md
+
+# Code Quality Tool Caches (added for Black, Ruff, mypy, pytest)
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.cover
+.hypothesis/
