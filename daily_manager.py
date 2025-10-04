@@ -50,19 +50,21 @@ def print_menu():
     print()
     print("📧 EMAIL:")
     print("  4. 📨 Process forwarded emails (create tasks from emails)")
+    print("  5. 📰 Generate email digest (AI-powered newsletter summary)")
+    print("  6. 📧 Review digest interactively (view + rate in one flow)")
     print()
     print("📊 VIEWS:")
-    print("  5. 📋 View my current tasks")
-    print("  6. 📅 View my calendar")
+    print("  7. 📋 View my current tasks")
+    print("  8. 📅 View my calendar")
     print()
     print("💾 BACKUP:")
-    print("  7. 💾 Create backup (before making changes)")
-    print("  8. 📂 Manage backups (list/restore)")
+    print("  9. 💾 Create backup (before making changes)")
+    print("  10. 📂 Manage backups (list/restore)")
     print()
     print("⚙️ SETUP & HELP:")
-    print("  9. 🔧 First-time setup")
-    print("  10. 📖 Show full workflow guide")
-    print("  11. 🚪 Exit")
+    print("  11. 🔧 First-time setup")
+    print("  12. 📖 Show full workflow guide")
+    print("  13. 🚪 Exit")
     print()
 
 def run_script(script_name, description):
@@ -398,6 +400,9 @@ def process_forwarded_emails():
     print("This will process unread emails from your Gmail assistant inbox")
     print("and create operation files for task/event creation.")
     print()
+    print("NOTE: Emails WITH [TASK] or #task markers → create task operations")
+    print("      Emails WITHOUT markers → save for digest (option 5)")
+    print()
 
     try:
         from email_processor import EmailProcessor
@@ -418,8 +423,8 @@ def process_forwarded_emails():
             print(f"✅ Processed {len(results)} email(s)")
             print()
             print("📝 Next steps:")
-            print("  1. Talk to Claude about pending email operations (option 2)")
-            print("  2. Select option 3 to apply changes to Todoist")
+            print("  • For task emails: Talk to Claude (option 2), then apply (option 3)")
+            print("  • For newsletters: Run digest generator (option 5)")
         else:
             print()
             print("📭 No new emails to process")
@@ -440,6 +445,45 @@ def process_forwarded_emails():
         print("❌ Email processor not found")
         print("   Missing: email_processor.py")
         print("   Please ensure all email integration files are installed")
+
+    except Exception as e:
+        print()
+        print(f"❌ Error: {str(e)}")
+
+def generate_email_digest():
+    """Generate AI-powered email digest"""
+    print("\n" + "=" * 60)
+    print("📰 GENERATE EMAIL DIGEST")
+    print("=" * 60)
+    print()
+    print("This will:")
+    print("  • Fetch unread emails WITHOUT [TASK]/#task markers")
+    print("  • Use Claude AI to analyze interest level")
+    print("  • Generate a prioritized markdown digest")
+    print("  • Group by: Urgent → High → Medium → Low")
+    print()
+
+    try:
+        run_script('biweekly_email_digest.py', 'Generating AI-powered email digest')
+
+    except Exception as e:
+        print()
+        print(f"❌ Error: {str(e)}")
+
+def review_digest_interactive():
+    """Review digest interactively - view and rate in one flow"""
+    print("\n" + "=" * 60)
+    print("📧 INTERACTIVE DIGEST REVIEW")
+    print("=" * 60)
+    print()
+    print("This will show each email with AI analysis,")
+    print("then immediately ask you to rate the prediction.")
+    print()
+    print("Perfect flow: Read → Rate → Next email!")
+    print()
+
+    try:
+        run_script('review_digest_interactive.py', 'Starting interactive review')
 
     except Exception as e:
         print()
@@ -471,11 +515,23 @@ def show_full_workflow():
     print("-" * 60)
     print()
     print("📧 EMAIL WORKFLOW (Optional):")
-    print("  • Forward emails to your Gmail assistant account")
-    print("  • Select option 4 to process forwarded emails")
-    print("  • System extracts tasks and creates operation files")
-    print("  • Talk to Claude about the pending operations (option 2)")
-    print("  • Review and apply changes (option 3)")
+    print()
+    print("  TASK EMAILS (with [TASK] or #task in subject):")
+    print("    • Forward emails to your Gmail assistant account")
+    print("    • Select option 4 to process forwarded emails")
+    print("    • System extracts tasks and creates operation files")
+    print("    • Talk to Claude about the pending operations (option 2)")
+    print("    • Review and apply changes (option 3)")
+    print()
+    print("  NEWSLETTER EMAILS (without task markers):")
+    print("    • Forward newsletters to your Gmail assistant account")
+    print("    • DON'T add [TASK] or #task to the subject")
+    print("    • Select option 5 to generate AI-powered digest")
+    print("    • Select option 6 for interactive review:")
+    print("      - Shows each email with AI analysis")
+    print("      - Rate the prediction immediately")
+    print("      - Perfect flow: Read → Rate → Next!")
+    print("    • The more you rate, the better the AI gets!")
     print()
     print("-" * 60)
     print()
@@ -501,9 +557,9 @@ def main():
     while True:
         print_banner()
         print_menu()
-        
+
         try:
-            choice = input("Choose an option (1-11): ").strip()
+            choice = input("Choose an option (1-13): ").strip()
 
             if choice == '1':
                 export_daily_data()
@@ -518,32 +574,38 @@ def main():
                 process_forwarded_emails()
 
             elif choice == '5':
-                view_current_tasks()
+                generate_email_digest()
 
             elif choice == '6':
-                view_calendar()
+                review_digest_interactive()
 
             elif choice == '7':
-                create_backup()
+                view_current_tasks()
 
             elif choice == '8':
-                manage_backups()
+                view_calendar()
 
             elif choice == '9':
-                first_time_setup()
+                create_backup()
 
             elif choice == '10':
-                show_full_workflow()
+                manage_backups()
 
             elif choice == '11':
+                first_time_setup()
+
+            elif choice == '12':
+                show_full_workflow()
+
+            elif choice == '13':
                 print("\n👋 Have a productive day!")
                 break
 
             else:
-                print("\n❌ Invalid choice. Please choose 1-11.")
-            
+                print("\n❌ Invalid choice. Please choose 1-13.")
+
             input("\n⏎ Press Enter to continue...")
-            
+
         except KeyboardInterrupt:
             print("\n\n👋 Goodbye!")
             break

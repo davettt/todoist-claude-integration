@@ -7,6 +7,77 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.3.1] - 2025-10-04
+
+### Added
+- Original sender extraction from forwarded email bodies (`utils/forwarded_email_parser.py`)
+- Dual trust system with separate `trusted_forwarders` and `trusted_senders` lists
+- `archive_message()` method to properly remove emails from inbox
+- Security warnings when emails not from user's forwarding accounts
+- Forwarder display in digest LOW interest section
+
+### Changed
+- Enhanced Claude API prompts for more specific, actionable email summaries
+- MEDIUM interest emails now show AI reasoning to help decision-making
+- LOW interest emails show all bullet points instead of just first one
+- Archive action now properly removes from inbox (not just mark as read)
+
+### Fixed
+- Archive functionality now removes INBOX label in addition to UNREAD
+- Email display formatting improvements (no stray asterisks)
+
+### Security
+- **Dual trust verification**: Checks both forwarder (security) and original sender (priority)
+- Forwarder validation prevents processing non-forwarded emails
+- Original sender prioritization for trusted content sources
+- Both forwarder and sender displayed in digests for transparency
+
+## [1.3.0] - 2025-10-04
+
+### Added
+- **Email Digest System (Phase 2.5)** - AI-powered email intelligence with learning system
+  - Claude API integration for smart email analysis (`utils/email_digest_generator.py`)
+  - Biweekly email digest generator with interest level predictions (`biweekly_email_digest.py`)
+  - Interactive digest review tool with inline rating system (`review_digest_interactive.py`)
+  - Email feedback tracker for continuous learning (`utils/email_feedback_tracker.py`)
+  - Interest profile system for personalized email prioritization (`local_data/personal_data/email_interest_profile.json`)
+  - Feedback logging with accuracy tracking (`local_data/personal_data/email_feedback_log.json`)
+- Daily manager enhancements
+  - Option 5: Generate biweekly email digest
+  - Option 6: Review digest interactively (read, rate, manage emails)
+  - Auto-mark emails as read after digest generation
+- Email management actions during review
+  - Archive emails (mark as read)
+  - Trash emails (30-day auto-delete failsafe)
+  - Keep in inbox or skip
+- Gmail API enhancements
+  - Full Gmail scope for read, modify, and trash operations
+  - `trash_message()` method for safe email cleanup
+  - Embedded Gmail IDs in digest markdown for email management
+
+### Changed
+- Gmail API scopes upgraded to `https://mail.google.com/` for full email management
+- Improved email display formatting (cleaner layout, no stray asterisks, emoji indicators)
+- Date display simplification in interactive review
+- Better error handling and user messaging throughout digest workflow
+- Enhanced Claude API prompts for more specific, actionable email summaries
+- MEDIUM interest emails now show AI reasoning to help decision-making
+- LOW interest emails show all bullet points instead of just first one
+
+### Fixed
+- Gmail API authentication scopes for delete/trash operations
+- Stray asterisks in email display formatting
+- Email archiving now properly removes from inbox (not just mark as read)
+- Archive action now uses `archive_message()` method (removes UNREAD + INBOX labels)
+
+### Security
+- **Dual trust system**: Separate checks for forwarders (your accounts) vs senders (content sources)
+- Original sender extraction from forwarded email bodies (`utils/forwarded_email_parser.py`)
+- Trusted forwarders list prevents processing emails sent directly to inbox
+- Trusted senders list prioritizes content from known sources (e.g., James Clear)
+- Security warnings when emails not forwarded from user's accounts
+- Both forwarder and original sender displayed in digests for transparency
+
 ## [1.2.0] - 2025-10-03
 
 ### Added

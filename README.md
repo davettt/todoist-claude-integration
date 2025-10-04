@@ -2,16 +2,17 @@
 
 *Manage your tasks by talking to Claude. Simple, powerful, automated.*
 
-**Current Version:** v1.2.0 | [Changelog](CHANGELOG.md)
+**Current Version:** v1.3.1 | [Changelog](CHANGELOG.md)
 
 ---
 
 ## What This Does
 
 1. **Export** your tasks and calendar to local files
-2. **Process emails** (optional) - Forward emails to create tasks automatically
-3. **Talk to Claude** about what you need to do
-4. **Apply** changes automatically to Todoist
+2. **Process emails** - Forward emails to create tasks automatically
+3. **AI Email Digest** - Get smart email summaries with interest predictions
+4. **Talk to Claude** about what you need to do
+5. **Apply** changes automatically to Todoist
 
 That's it. Simple, powerful, automated.
 
@@ -28,9 +29,11 @@ python3 daily_manager.py
 
 This gives you a guided menu for everything:
 - Export your data (Step 1)
-- Instructions for Claude (Step 2)  
+- Instructions for Claude (Step 2)
 - Apply changes (Step 3)
 - Process forwarded emails (Step 4)
+- Generate AI email digest (Step 5)
+- Review digest interactively (Step 6)
 - View tasks and calendar
 - Backups and setup
 

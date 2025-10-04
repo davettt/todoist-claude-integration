@@ -24,6 +24,20 @@ from utils.email_sanitizer import (
 from utils.file_manager import archive_processed_file
 
 
+def has_task_marker(subject: str) -> bool:
+    """
+    Check if email subject has task marker
+
+    Args:
+        subject: Email subject line
+
+    Returns:
+        True if has [TASK] or #task marker
+    """
+    subject_lower = subject.lower()
+    return '[task]' in subject_lower or '#task' in subject_lower
+
+
 class EmailProcessor:
     """Main email processing coordinator"""
 
@@ -150,6 +164,11 @@ class EmailProcessor:
             print(f"📬 From: {sender_info['name']} <{sender_info['email']}>")
             print(f"📋 Subject: {subject}")
 
+            # Check for task marker
+            is_task_email = has_task_marker(subject)
+            marker_type = "[TASK] email" if is_task_email else "Newsletter/digest email"
+            print(f"🏷️  Type: {marker_type}")
+
             # 3. Get email body
             body = details['body']
 
@@ -177,14 +196,18 @@ class EmailProcessor:
                 print("❌ Content sanitization failed - unsafe content detected!")
                 return None
 
-            # 5. Create operation file (would normally send to Claude, but for now just create template)
-            print("📝 Creating operation file...")
-            operation_file = self._create_operation_file(
-                sender_info=sender_info,
-                subject=subject,
-                date=date_str,
-                sanitized_body=sanitized_body
-            )
+            # 5. Create operation file for task emails only
+            operation_file = None
+            if is_task_email:
+                print("📝 Creating operation file for task email...")
+                operation_file = self._create_operation_file(
+                    sender_info=sender_info,
+                    subject=subject,
+                    date=date_str,
+                    sanitized_body=sanitized_body
+                )
+            else:
+                print("ℹ️  Newsletter email - process with digest system (biweekly_email_digest.py)")
 
             # 6. Log interaction
             interaction = {
@@ -194,6 +217,7 @@ class EmailProcessor:
                 "from_name": sender_info['name'],
                 "subject": subject,
                 "processed_date": datetime.now().isoformat(),
+                "is_task_email": is_task_email,
                 "operation_file": operation_file,
                 "sanitization_summary": sanitization_summary,
                 "status": "processed"
@@ -207,7 +231,10 @@ class EmailProcessor:
                 self.gmail_client.mark_as_read(message['id'])
                 print("✅ Marked as read")
 
-            print(f"✅ Created: {operation_file}")
+            if operation_file:
+                print(f"✅ Created: {operation_file}")
+            else:
+                print("✅ Email logged (for digest processing)")
 
             return {
                 'message_id': message['id'],

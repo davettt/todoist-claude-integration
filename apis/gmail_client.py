@@ -29,9 +29,9 @@ class GmailClient:
             from googleapiclient.discovery import build
 
             # Gmail API scopes
+            # Using full gmail scope to enable read, modify, and delete operations
             SCOPES = [
-                'https://www.googleapis.com/auth/gmail.readonly',
-                'https://www.googleapis.com/auth/gmail.modify'
+                'https://mail.google.com/'
             ]
 
             creds = None
@@ -230,9 +230,57 @@ class GmailClient:
             print(f"❌ Error marking message as read: {str(e)}")
             return False
 
+    def archive_message(self, message_id: str) -> bool:
+        """
+        Archive a message (mark as read + remove from inbox)
+
+        Args:
+            message_id: Gmail message ID
+
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            self.gmail_service.users().messages().modify(
+                userId='me',
+                id=message_id,
+                body={'removeLabelIds': ['UNREAD', 'INBOX']}
+            ).execute()
+
+            self.log_operation("Archived message", f"ID: {message_id[:10]}...")
+            return True
+
+        except Exception as e:
+            print(f"❌ Error archiving message: {str(e)}")
+            return False
+
+    def trash_message(self, message_id: str) -> bool:
+        """
+        Move message to trash (30-day auto-delete)
+
+        Args:
+            message_id: Gmail message ID
+
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            self.gmail_service.users().messages().trash(
+                userId='me',
+                id=message_id
+            ).execute()
+
+            self.log_operation("Trashed message", f"ID: {message_id[:10]}...")
+            return True
+
+        except Exception as e:
+            print(f"❌ Error trashing message: {str(e)}")
+            return False
+
     def delete_message(self, message_id: str) -> bool:
         """
-        Delete a message permanently
+        Delete a message permanently (bypasses trash)
+        Use trash_message() instead for 30-day failsafe
 
         Args:
             message_id: Gmail message ID
@@ -246,7 +294,7 @@ class GmailClient:
                 id=message_id
             ).execute()
 
-            self.log_operation("Deleted message", f"ID: {message_id[:10]}...")
+            self.log_operation("Permanently deleted message", f"ID: {message_id[:10]}...")
             return True
 
         except Exception as e:

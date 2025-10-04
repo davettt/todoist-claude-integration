@@ -52,5 +52,10 @@ gmail_token.json
 # Email integration
 local_data/personal_data/email_interactions_log.json
 
+# Email Digest System (Phase 2.5)
+local_data/email_digests/*.md
+local_data/personal_data/email_feedback_log.json
+# Keep the email_interest_profile.json template (user should customize)
+
 # Personal roadmap (optional - uncomment if you don't want to push it)
 ROADMAP_personal.md
