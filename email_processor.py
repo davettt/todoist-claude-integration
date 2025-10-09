@@ -233,10 +233,14 @@ class EmailProcessor:
             self.interactions.append(interaction)
             self._save_interactions_log()
 
-            # 7. Mark as read (or delete based on configuration)
-            if mark_as_read:
+            # 7. Mark task emails as read (leave newsletter emails unread for digest)
+            if mark_as_read and is_task_email:
                 self.gmail_client.mark_as_read(message["id"])
                 print("✅ Marked as read")
+            elif is_task_email:
+                print("ℹ️  Not marking as read (mark_as_read=False)")
+            else:
+                print("ℹ️  Left unread (newsletter - for digest processing)")
 
             if operation_file:
                 print(f"✅ Created: {operation_file}")

@@ -129,6 +129,9 @@ def review_digest_interactive(digest_path: str = None):
     # Show summary
     show_summary(tracker, rated_count)
 
+    # Mark digest as reviewed (even if user skipped all - they still went through it)
+    mark_digest_reviewed(digest_path)
+
 
 def show_email_with_analysis(email: dict, current: int, total: int):
     """Display email with full AI analysis"""
@@ -408,6 +411,36 @@ def parse_digest_with_content(digest_path: str) -> list:
         traceback.print_exc()
 
     return emails
+
+
+def mark_digest_reviewed(digest_path: str):
+    """Move digest to reviewed folder after interactive review"""
+    try:
+        import shutil
+
+        # Create reviewed directory
+        reviewed_dir = "local_data/email_digests/reviewed"
+        os.makedirs(reviewed_dir, exist_ok=True)
+
+        # Move digest to reviewed folder
+        filename = os.path.basename(digest_path)
+        new_path = os.path.join(reviewed_dir, filename)
+
+        shutil.move(digest_path, new_path)
+
+        print("\n" + "=" * 70)
+        print("✅ DIGEST MARKED AS REVIEWED")
+        print("=" * 70)
+        print()
+        print(f"📂 Moved to: {reviewed_dir}/")
+        print(f"📝 File: {filename}")
+        print()
+        print("💡 Next time you review (option 6), you'll get the latest unreviewed digest!")
+        print()
+
+    except Exception as e:
+        print(f"\n⚠️  Could not move digest: {str(e)}")
+        print("   (Digest remains in original location)")
 
 
 def show_summary(tracker: EmailFeedbackTracker, rated_count: int):

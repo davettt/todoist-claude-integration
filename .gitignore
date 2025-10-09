@@ -19,6 +19,9 @@ local_data/
 *.json
 !.env.example
 
+# Claude AI personal context and workflow
+.claude/
+
 # Backup files
 *_BACKUP.py
 *_FIXED.py

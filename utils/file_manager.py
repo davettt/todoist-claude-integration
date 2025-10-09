@@ -79,7 +79,20 @@ def find_operation_files(pattern: str = "tasks*.json") -> List[str]:
 
 
 def archive_processed_file(filename: str, operation_type: str = "operation") -> None:
-    """Archive a processed file with timestamp"""
+    """
+    Archive a processed file with timestamp
+
+    Moves the file to local_data/processed/ directory with a timestamp suffix.
+    The archived filename will be just the basename (no directory structure preserved).
+
+    Args:
+        filename: Full or relative path to the file to archive
+        operation_type: Type of operation (for logging purposes)
+
+    Example:
+        Input: "local_data/pending_operations/tasks_email_2025-10-07.json"
+        Output: "local_data/processed/tasks_email_2025-10-07_20251007_143022.json"
+    """
     ensure_local_data_structure()
 
     if not os.path.exists(filename):
@@ -88,7 +101,8 @@ def archive_processed_file(filename: str, operation_type: str = "operation") -> 
 
     # Add timestamp to filename
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    base_name = os.path.splitext(filename)[0]
+    base_filename = os.path.basename(filename)  # Extract just filename
+    base_name = os.path.splitext(base_filename)[0]  # Remove extension
     archived_name = f"{base_name}_{timestamp}.json"
 
     # Move to processed directory
