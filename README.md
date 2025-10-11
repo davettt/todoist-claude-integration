@@ -1,90 +1,268 @@
 # Todoist + Claude Integration
 
-*A CLI tool that lets you manage Todoist tasks, process emails, and analyze your calendar through natural conversations with Claude AI.*
+*Manage your Todoist tasks through natural conversations with Claude AI - no clicking, just talking.*
 
-**Current Version:** v1.3.1 | [Changelog](CHANGELOG.md) | [Quick Start Guide](QUICKSTART.md)
-
----
-
-## What This Does
-
-1. **Export** your tasks and calendar to local files
-2. **Process emails** - Forward emails to create tasks automatically  
-3. **AI Email Digest** - Get smart email summaries with interest predictions
-4. **Talk to Claude** about what you need to do
-5. **Apply** changes automatically to Todoist
-
-That's it. Simple, powerful, automated.
+**Current Version:** v1.3.1 | [Changelog](CHANGELOG.md)
 
 ---
 
-## Key Features
+## What It Does
 
-### 📋 Task Management
-- Create, update, complete, and delete tasks through conversation
-- Natural language due dates ("tomorrow", "next Friday")
-- Project/section organization with labels and priorities
-- Batch operations and intelligent task matching
-
-### 📧 Email Integration
-- **Forward emails** to auto-create tasks and extract action items
-- **AI-powered digest** with HIGH/MEDIUM/LOW interest predictions
-- **Dual trust system** - Verify both forwarder (security) and original sender (priority)
-- **Interactive review** - Rate emails to improve AI predictions over time
-- **Secure processing** - All URLs and email addresses stripped before analysis
-
-### 📅 Calendar Analysis
-- View availability and free time across 2 weeks
-- Identify focus blocks for deep work (3+ hour uninterrupted slots)
-- Schedule-aware task planning
-- Avoid conflicts when adding new commitments
+- 🗣️ **Chat naturally with Claude** - "I finished the report" or "Add grocery shopping for tomorrow"
+- 📋 **Automatic task management** - Claude creates/updates/completes tasks in Todoist
+- 📧 **Smart email processing** - Forward emails to auto-create tasks with AI digest
+- 📅 **Calendar integration** - Claude considers your schedule when planning tasks
+- ✨ **Simple workflow** - Export → Chat with Claude → Apply changes
 
 ---
 
 ## Quick Start
 
-**New user?** → Read [QUICKSTART.md](QUICKSTART.md) for 5-minute setup
-
-**Daily workflow:**
+**Want to try it right now?**
 
 ```bash
+# 1. Clone and install
+git clone <repo-url>
+cd todoist-python
+pip install -r requirements.txt
+
+# 2. Set up credentials
+cp .env.example .env
+# Add your Todoist API token to .env
+
+# 3. Run the daily manager
 python3 daily_manager.py
 ```
 
-Then follow the simple menu:
-1. **Export data** - Get latest tasks and calendar
-2. **Talk to Claude** - Describe what you want to do
-3. **Apply changes** - Update Todoist automatically
-
-That's the whole workflow! 🎯
+**That's it!** See [Installation](#installation) for detailed setup.
 
 ---
 
-## The Daily Manager
+## Installation
+
+### Prerequisites
+
+Before installing, make sure you have:
+- **Python 3.9 or newer** ([Check version](https://www.python.org/downloads/): `python3 --version`)
+- **pip** (usually comes with Python)
+- **Todoist account** ([Sign up free](https://todoist.com/))
+- **Todoist API token** ([Get it here](https://todoist.com/prefs/integrations))
+- **Optional:** Google Calendar API credentials (for calendar features)
+
+### Step 1: Clone the Repository
+
+```bash
+git clone <repo-url>
+cd todoist-python
+```
+
+### Step 2: Install Dependencies
+
+```bash
+pip install -r requirements.txt
+```
+
+**What this installs:** Python packages for Todoist API, Google Calendar, email processing, etc.
+
+### Step 3: Set Up API Credentials
+
+```bash
+# Copy the example file
+cp .env.example .env
+
+# Edit .env and add your Todoist API token:
+# TODOIST_API_TOKEN=your-token-here
+```
+
+Get your Todoist API token from: [Todoist Integrations](https://todoist.com/prefs/integrations)
+
+**Optional - Google Calendar:**
+- See [Setting Up Calendar Integration](#setting-up-calendar-integration) if you want calendar features
+- Not required for basic task management
+
+### Step 4: First Run
 
 ```bash
 python3 daily_manager.py
 ```
 
-**Menu Options:**
-```
-1. Export data (Step 1)
-2. Instructions for Claude (Step 2)  
-3. Apply changes (Step 3)
-4. Process forwarded emails
-5. Generate AI email digest
-6. Review digest interactively
-7. View my current tasks
-8. View my calendar
-9. First-time setup
-10. Show full workflow guide
-11. Exit
+**Expected result:** You'll see a menu with options to export data, view tasks, etc.
+
+### Troubleshooting Installation
+
+**Python not found?**
+- Install from [python.org](https://www.python.org/downloads/)
+- Try `python3` instead of `python`
+
+**"No module named 'todoist_api_python'" or similar?**
+- Install dependencies: `pip install -r requirements.txt`
+- Make sure you're in the todoist-python directory
+
+**"Invalid Todoist API token"?**
+- Check `.env` file format: `TODOIST_API_TOKEN=your-token` (no quotes, no spaces)
+- Get a new token from [Todoist Integrations](https://todoist.com/prefs/integrations)
+
+---
+
+## How to Use
+
+### The Daily Workflow (3 Steps)
+
+```bash
+python3 daily_manager.py
 ```
 
-If you have pending email operations, you'll see a banner:
-> 📧 2 pending email operations ready for review
+You'll see a simple menu organized by workflow:
 
-Mention these to Claude and it will help you process them.
+```
+📋 DAILY WORKFLOW:
+  1. Export data (Step 1)
+  2. Instructions for Claude (Step 2)
+  3. Apply changes (Step 3)
+
+📧 EMAIL:
+  4. Process forwarded emails
+  5. Generate email digest
+  6. Review digest interactively
+
+📊 VIEWS:
+  7. View my current tasks
+  8. View my calendar
+
+💾 BACKUP:
+  9. Create backup
+  10. Manage backups
+
+⚙️ SETUP & HELP:
+  11. First-time setup
+  12. Show full workflow guide
+  13. Exit
+```
+
+**The basic workflow:**
+
+**Step 1 - Export data:**
+- Choose option 1
+- Exports your tasks to `local_data/personal_data/current_tasks.json`
+
+**Step 2 - Chat with Claude:**
+- Choose option 2 to see instructions
+- Open Claude.ai in your browser
+- Tell Claude: "Read my Todoist data at [folder path]"
+- Have a natural conversation about your tasks
+
+**Step 3 - Apply changes:**
+- Claude creates a JSON file with your changes
+- Choose option 3 in the menu
+- Script automatically updates Todoist
+
+**That's it!** Repeat daily.
+
+### Example Conversations with Claude
+
+**Morning planning:**
+> You: "What should I focus on today?"
+> 
+> Claude: *Reads your tasks and calendar* "You have 3 tasks due today and a meeting at 2pm. I recommend tackling the report before lunch."
+
+**Completing tasks:**
+> You: "I finished the report and called the client"
+>
+> Claude: *Creates completion file* "I've marked those 2 tasks as complete. Run the apply script."
+
+**Adding new tasks:**
+> You: "Add grocery shopping for tomorrow, high priority"
+>
+> Claude: *Creates new task file* "Added 'Grocery shopping' for tomorrow with high priority."
+
+---
+
+## Common Tasks
+
+### Daily Planning
+
+```bash
+python3 daily_manager.py
+# Choose: 1 (Export data)
+# Then chat with Claude about your day
+# Choose: 3 (Apply changes)
+```
+
+### Viewing Your Current Tasks
+
+```bash
+python3 daily_manager.py
+# Choose: 7 (View my current tasks)
+```
+
+Shows your overdue, today, and upcoming tasks.
+
+### Processing Forwarded Emails
+
+```bash
+python3 daily_manager.py
+# Choose: 4 (Process forwarded emails)
+```
+
+Forward emails to your special address, then process them to create tasks.
+
+### Setting Up Email Integration
+
+**Prerequisites:**
+- Gmail account for assistant inbox
+- Google Cloud project with Gmail API enabled
+- OAuth 2.0 credentials (Desktop app)
+- Anthropic API key (for AI digest)
+
+**Setup steps:**
+1. Use same Google Cloud project (or create new one)
+2. Enable Gmail API
+3. Create OAuth 2.0 credentials (Desktop app)
+4. Download credentials → save as `local_data/gmail_credentials.json`
+5. Configure `.env` with:
+   ```bash
+   TRUSTED_FORWARDERS=your.email@gmail.com,work@company.com
+   TRUSTED_SENDERS=newsletter@trusted.com,sender@example.com
+   ANTHROPIC_API_KEY=your-claude-api-key
+   ```
+6. Run `python3 process_emails.py` to authorize
+
+**How it works:**
+- Forward emails to your Gmail assistant account
+- System checks dual trust: forwarder (security) + original sender (priority)
+- Emails WITH `[TASK]` or `#task` → create task operations
+- Emails WITHOUT markers → save for AI digest
+
+### Getting an Email Digest
+
+```bash
+python3 daily_manager.py
+# Choose: 5 (Generate AI email digest)
+```
+
+Get AI-powered summaries with interest predictions (HIGH/MEDIUM/LOW).
+
+### Setting Up Calendar Integration
+
+**Prerequisites:**
+- Google account with Calendar
+- Google Cloud project with Calendar API enabled
+- OAuth 2.0 credentials (Desktop app)
+
+**Quick setup:**
+```bash
+python3 daily_manager.py
+# Choose: 11 (First-time setup)
+```
+
+**Manual setup:**
+1. Create Google Cloud project at [console.cloud.google.com](https://console.cloud.google.com)
+2. Enable Google Calendar API
+3. Create OAuth 2.0 credentials (Desktop app)
+4. Download credentials → save as `local_data/calendar_credentials.json`
+5. Run `python3 get_calendar_data.py` to authorize
+
+Calendar data will be exported to `local_data/personal_data/calendar_full_analysis.json`.
 
 ---
 
@@ -94,8 +272,8 @@ Mention these to Claude and it will help you process them.
 
 **Always check these files first:**
 - `local_data/personal_data/current_tasks.json` - User's tasks (overdue, today, upcoming)
-- `local_data/personal_data/calendar_full_analysis.json` - Calendar availability
-- `local_data/pending_operations/tasks_email_*.json` - Pending email operations
+- `local_data/personal_data/calendar_full_analysis.json` - Calendar availability (if available)
+- `local_data/pending_operations/tasks_email_*.json` - Pending email operations (if any)
 
 ### 2. Understand User Intent
 
@@ -104,7 +282,7 @@ Mention these to Claude and it will help you process them.
 - "I finished X and Y" → Create `completions` operation
 - "Add task to X" → Create `new_tasks` operation  
 - "Move X to Friday" → Create `updates` operation
-- "Delete X" → Create `deletions` operation (use sparingly - completions preserve history)
+- "Delete X" → Create `deletions` operation (use sparingly)
 - "Review my emails" → Check `pending_operations/` directory
 
 ### 3. Create Operation File
@@ -114,7 +292,7 @@ Mention these to Claude and it will help you process them.
 **Template:**
 ```json
 {
-  "operation_type": "Brief description of what this does",
+  "operation_type": "Brief description",
   "generated_at": "2025-10-04T19:00:00",
   "completions": [
     {
@@ -123,110 +301,10 @@ Mention these to Claude and it will help you process them.
       "reason": "Optional: Why completing"
     }
   ],
-  "updates": [
-    {
-      "content": "Exact task name",
-      "task_id": "9382265058",
-      "due_date": "2025-10-07",
-      "priority": 2,
-      "labels": ["Personal"],
-      "description": "Updated description"
-    }
-  ],
   "new_tasks": [
     {
       "content": "New task title",
       "project_name": "This week",
-      "section_name": "In Progress",
-      "due_date": "tomorrow",
-      "priority": 2,
-      "labels": ["Personal"],
-      "description": "Task details"
-    }
-  ],
-  "deletions": [
-    {
-      "content": "Exact task name",
-      "task_id": "9382265058",
-      "reason": "Optional: Why deleting"
-    }
-  ]
-}
-```
-
-### 4. Critical Rules
-
-**Task Matching:**
-- Use EXACT task names from the JSON files
-- Include `task_id` when available (most reliable)
-- For duplicate names, include `project_name` and `section_name`
-- When uncertain, show user the exact name and confirm
-
-**Completions vs Deletions:**
-- ✅ **completions**: Use for "done", "finished", "complete" - preserves history
-- 🗑️ **deletions**: Use for "delete", "remove permanently" - use sparingly
-- **ALWAYS use completions for recurring tasks** (deletion breaks the recurrence)
-
-**Priority Levels:**
-- 1 = P1 (Urgent/Red)
-- 2 = P2 (High/Orange)  
-- 3 = P3 (Medium/Blue)
-- 4 = P4 (Low/None)
-
-**Due Dates:**
-- Natural language: "tomorrow", "next week", "Oct 15"
-- Specific format: "YYYY-MM-DD"
-
-### 5. Response Format
-
-After creating the operation file, tell the user:
-
-1. **What you created:** "I've created an operation file with 2 completions and 1 new task"
-2. **How to apply:** "Run: `python3 todoist_task_manager.py`"
-3. **What will happen:** "This will mark 'Pay rent' and 'Call dentist' as complete, and create a new task 'Grocery shopping' for tomorrow"
-
-**Be specific and clear!** Users need to know exactly what will change.
-
----
-
-## Examples
-
-### Morning Planning
-**User:** "What should I focus on today?"
-
-**Claude:**
-1. Reads `current_tasks.json` for due tasks
-2. Checks `calendar_full_analysis.json` for free time
-3. Suggests: "You have 1 task due today and 13 hours of free time. I recommend tackling your address updates this morning."
-
-### Completing Tasks
-**User:** "I paid rent and called the dentist"
-
-**Claude creates `tasks_completions_2025-10-04.json`:**
-```json
-{
-  "operation_type": "Mark completed tasks",
-  "generated_at": "2025-10-04T10:30:00",
-  "completions": [
-    {"content": "Pay rent", "task_id": "9431228119"},
-    {"content": "Call dentist", "task_id": "9467234567"}
-  ]
-}
-```
-
-### Adding Tasks
-**User:** "Add a task to grocery shop tomorrow, high priority"
-
-**Claude creates `tasks_new-grocery_2025-10-04.json`:**
-```json
-{
-  "operation_type": "Add grocery shopping task",
-  "generated_at": "2025-10-04T14:00:00",
-  "new_tasks": [
-    {
-      "content": "Grocery shopping",
-      "project_name": "This week",
-      "section_name": "Incoming",
       "due_date": "tomorrow",
       "priority": 2,
       "labels": ["Personal"]
@@ -235,118 +313,206 @@ After creating the operation file, tell the user:
 }
 ```
 
-### Rescheduling
-**User:** "Move my address update to Sunday"
+### 4. Critical Rules
 
-**Claude creates `tasks_reschedule_2025-10-04.json`:**
-```json
-{
-  "operation_type": "Reschedule address task to Sunday",
-  "generated_at": "2025-10-04T16:00:00",
-  "updates": [
-    {
-      "content": "Update remaining address details and passport",
-      "task_id": "9382265058",
-      "due_date": "2025-10-05"
-    }
-  ]
-}
-```
+- Use EXACT task names from JSON files
+- Include `task_id` when available
+- Use `completions` for done tasks (preserves history)
+- Use natural language dates: "tomorrow", "next Friday", "Oct 15"
+- Priority levels: 1=Urgent, 2=High, 3=Medium, 4=Low
 
-### Email Processing
-**User:** "Review my pending emails"
-
-**Claude:**
-1. Checks `local_data/pending_operations/` directory
-2. Finds `tasks_email_2025-10-04.json` with sanitized content
-3. Extracts action items and suggests tasks to create
-4. Updates the same file with `new_tasks` array populated
+**Full documentation:** See [For Claude](#for-claude-how-to-help-users) section above for complete details.
 
 ---
 
-## File Structure
+## Requirements
+
+- Python 3.9 or newer
+- Todoist account (free or paid)
+- Todoist API token
+
+**Optional:**
+- Google Calendar API credentials (for calendar features)
+- Gmail API credentials (for email features)
+
+---
+
+## Data Storage & Privacy
+
+- 🏠 **Your data stays local** in `local_data/` folder
+- 🔒 **API tokens** stored in `.env` file (never committed to git)
+- ☁️ **Cloud sync** only to Todoist and Google (if enabled)
+- 🔒 **Email security** - Dual trust verification, URLs/emails stripped before AI processing
+- 🚫 **No tracking** or external analytics
+- ✅ **Open source** - review all code yourself
+
+**Your private files:**
+- `local_data/personal_data/` - Your tasks, calendar, email data
+- `.env` - Your API credentials
+- Both are excluded from git automatically
+
+---
+
+## Usage & Forking
+
+This project is open source under MIT license. You're welcome to:
+- **Fork the repository** and customize for your own needs
+- **Report bugs** via GitHub issues
+- **Suggest improvements** in discussions
+
+*Note: This is a personal productivity system. While the code is open source, I keep contributions minimal to maintain system stability for personal use.*
+
+### For Developers (Forking/Customization)
+
+If you've forked this project and want to modify it, see:
+- **[.claude/README.md](.claude/README.md)** - Claude Code integration guide
+- **[.claude/workflow/code_standards.md](.claude/workflow/code_standards.md)** - Code quality workflow
+
+**Quick fork setup:**
+```bash
+git clone <your-fork-url>
+cd todoist-python
+python3 -m venv venv
+source venv/bin/activate
+pip install -r requirements.txt
+# See .claude/ folder for development docs
+```
+
+---
+
+## Troubleshooting
+
+### Installation Issues
+
+**"No module named 'todoist_api_python'"**
+- Run: `pip install -r requirements.txt`
+- Make sure you're in the todoist-python directory
+
+**"Invalid Todoist API token"**
+- Check `.env` format: `TODOIST_API_TOKEN=your-token` (no quotes/spaces)
+- Get new token: [Todoist Integrations](https://todoist.com/prefs/integrations)
+
+### Calendar/Email Issues
+
+**"Credentials not found"**
+- Verify file location: `local_data/calendar_credentials.json` or `local_data/gmail_credentials.json`
+- Re-download from Google Cloud Console
+
+**"Token expired" or "Invalid credentials"**
+- Delete token file: `local_data/calendar_token.json` or `local_data/gmail_token.json`
+- Re-run the script to re-authorize
+
+**"No emails found" (but you forwarded emails)**
+- Check emails forwarded to correct inbox
+- Verify `TRUSTED_FORWARDERS` in `.env`
+- Email subject must have "Fwd:" or "Fw:"
+
+### Task Management Issues
+
+**"Task not found"**
+- Task names must match EXACTLY (check option 7)
+- Use `task_id` field for 100% accuracy
+
+**Changes not appearing in Todoist**
+- Check internet connection
+- Review preview output before confirming
+- Look for error messages in terminal
+
+---
+
+## Support
+
+- 📖 **Questions?** Check [Troubleshooting](#troubleshooting) and [Common Tasks](#common-tasks)
+- 🐛 **Found a bug?** Open an issue on GitHub
+- 💡 **Have an idea?** Start a discussion
+
+---
+
+## Advanced
+
+### Email Features
+
+**Forward emails to create tasks:**
+1. Set up email forwarding (see [Setting Up Email Integration](#setting-up-email-integration))
+2. Forward emails to your Gmail assistant account
+3. Process with option 4 in daily manager
+
+**AI Email Digest:**
+- Get HIGH/MEDIUM/LOW interest predictions
+- Learn from your ratings over time
+- Secure: URLs and email addresses stripped before AI processing
+
+### Calendar Integration
+
+**View your schedule:**
+- See availability and free time blocks
+- Identify 3+ hour focus blocks for deep work
+- Schedule-aware task planning
+
+**Setup:**
+- Run option 11 (First-time setup) in daily manager
+- Follow prompts to connect Google Calendar
+
+### File Structure
 
 ```
 todoist-python/
-├── README.md                      ← Overview & Claude instructions
-├── QUICKSTART.md                  ← Setup & detailed usage
-├── CHANGELOG.md                   ← Version history
+├── .env                           # API tokens (NEVER commit)
+├── daily_manager.py               # Main CLI - start here!
+├── get_current_tasks.py           # Export tasks
+├── todoist_task_manager.py        # Apply changes
+├── process_emails.py              # Email processing
+├── biweekly_email_digest.py       # Generate digest
+├── review_digest_interactive.py   # Review & rate
 │
-├── daily_manager.py               ← Main CLI (start here!)
-├── get_current_tasks.py           ← Export tasks
-├── get_calendar_data.py           ← Export calendar
-├── todoist_task_manager.py        ← Apply changes
-├── process_emails.py              ← Process forwarded emails
-├── biweekly_email_digest.py       ← Generate email digest
-├── review_digest_interactive.py   ← Review & rate emails
+├── local_data/
+│   ├── calendar_credentials.json  # Google Calendar OAuth (gitignored)
+│   ├── calendar_token.json        # Calendar access token (gitignored)
+│   ├── gmail_credentials.json     # Gmail OAuth (gitignored)
+│   ├── gmail_token.json           # Gmail access token (gitignored)
+│   │
+│   ├── personal_data/             # Claude reads these
+│   │   ├── current_tasks.json          # Your tasks
+│   │   ├── calendar_full_analysis.json # Calendar availability
+│   │   ├── todoist_reference.json      # Projects/labels
+│   │   ├── email_interest_profile.json # AI learning data
+│   │   └── email_feedback_log.json     # Rating accuracy
+│   │
+│   ├── pending_operations/        # Email ops awaiting review
+│   │   └── tasks_email_*.json
+│   │
+│   ├── email_digests/             # Generated digests
+│   │   └── digest_YYYY-MM-DD.md
+│   │
+│   └── processed/                 # Archived operations
+│       └── tasks_*.json
 │
-└── local_data/
-    ├── personal_data/             ← Claude reads these
-    │   ├── current_tasks.json
-    │   ├── calendar_full_analysis.json
-    │   ├── email_interest_profile.json
-    │   └── email_feedback_log.json
-    ├── pending_operations/        ← Email operations to review
-    └── email_digests/             ← Generated digests
+└── tasks_*.json                   # Temporary - Claude creates
+
+**All credentials and personal data are gitignored**
 ```
 
----
-
-## Privacy & Security
-
-- 🔒 **Local-first**: All data stays on your machine + Todoist/Google servers
-- 🔒 **No third-party storage**: Never uploads to unknown cloud services
-- 🔒 **Dual trust system**: Verifies both email forwarder (security) and original sender (priority)
-- 🔒 **Content sanitization**: Strips all URLs and email addresses before processing
-- 🔒 **Credentials protected**: `.gitignore` prevents committing tokens/credentials
-- ✅ **Open source**: Review all code - no hidden behavior
-
----
-
-## Roadmap
+### Roadmap
 
 **✅ Current (v1.3.1):**
 - Complete Todoist integration
-- Optional calendar analysis
-- Email forwarding with dual trust system
-- AI-powered email digest with learning
-- Interactive review and feedback
+- Calendar analysis
+- Email forwarding with AI digest
+- Interactive review
 
 **🚀 Next:**
-- Email observation period (gather more feedback data)
-- Local CRM foundation (client/sender database)
-- Task templates for common patterns
+- Local CRM (client/sender database)
+- Task templates
 - Analytics and productivity insights
-
-Full version history: [CHANGELOG.md](CHANGELOG.md)
-
----
-
-## Support & Contributing
-
-**Getting Started:**
-- 📚 [QUICKSTART.md](QUICKSTART.md) - Complete setup guide
-- 📋 [CHANGELOG.md](CHANGELOG.md) - What's new
-- ❓ Issues - Report bugs or request features
-
-**Contributing:**
-This is a personal productivity system, but:
-- Bug reports welcome via GitHub issues
-- Suggestions welcome via discussions  
-- Forks encouraged (MIT license)
-
-*Note: I keep contributions minimal to maintain system stability for personal use.*
 
 ---
 
 ## License
 
-MIT License - See [LICENSE](LICENSE) file for details.
+MIT License - See [LICENSE](LICENSE) for details.
 
 ---
 
-**Ready to start?** → [QUICKSTART.md](QUICKSTART.md) ⚡
+**Version:** v1.3.1 | **Last updated:** 2025-10-12
 
----
-
-*Version 1.3.1 - Last updated: October 4, 2025*
+**Ready to get started?** Run `python3 daily_manager.py` 🚀
