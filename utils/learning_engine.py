@@ -561,15 +561,19 @@ class LearningEngine:
         return analysis
 
     def _get_high_value_entries(self, entries: List[Dict[str, Any]]) -> List[Dict]:
-        """Filter entries to only those with high value (escalations or useful agreements)"""
+        """Filter entries to only those with high value (escalations or high-priority agreements)"""
         high_value = []
         for entry in entries:
+            predicted_level = entry.get("predicted_level", "").lower()
             actual_interest = entry.get("actual_interest", "")
 
-            # High-value if: escalated, or marked useful at any level
-            # Previously was too restrictive (only useful + high/urgent predictions)
-            # Now includes useful emails at medium level too, since user agreed with prediction
-            if actual_interest == "more_important" or actual_interest == "useful":
+            # High-value if:
+            # 1. Escalated (⬆️ marked as higher priority than predicted)
+            # 2. Marked useful (👍) AND predicted as HIGH or URGENT (truly valuable content)
+            # Note: 👍 on MEDIUM/LOW predictions just means filter is working, not valuable content
+            if actual_interest == "more_important" or (
+                actual_interest == "useful" and predicted_level in ["high", "urgent"]
+            ):
                 high_value.append(entry)
 
         return high_value
