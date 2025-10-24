@@ -292,7 +292,9 @@ def display_calendar_summary(calendar_data):
         rating_emoji = (
             "🟢"
             if analysis["availability_rating"] >= 8
-            else "🟡" if analysis["availability_rating"] >= 6 else "🔴"
+            else "🟡"
+            if analysis["availability_rating"] >= 6
+            else "🔴"
         )
 
         print(f"{rating_emoji} {analysis['day_name']} ({date}):")
@@ -360,7 +362,9 @@ def save_calendar_data_for_claude(calendar_data):
                     "suitable_for": (
                         "focus_work"
                         if slot["is_focus_time"]
-                        else "admin_work" if slot["is_large_block"] else "quick_tasks"
+                        else "admin_work"
+                        if slot["is_large_block"]
+                        else "quick_tasks"
                     ),
                 }
             )
@@ -416,13 +420,25 @@ def main():
         print("🤖 Share calendar_availability.json with Claude for task scheduling!")
 
     except ValueError as e:
-        print(f"❌ Setup Error: {str(e)}")
-        print("\nSetup Instructions:")
-        print(
-            "1. Install Google Calendar API: pip install google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client"
-        )
-        print("2. Download credentials from Google Cloud Console")
-        print("3. Save as local_data/calendar_credentials.json")
+        error_str = str(e)
+        print(f"❌ Setup Error: {error_str}")
+
+        # Handle expired token specially
+        if "EXPIRED_TOKEN" in error_str:
+            print("\n🔐 Token Recovery Instructions:")
+            print("Your Google Calendar token has expired or been revoked.")
+            print("\nQuick fix - run this command:")
+            print("  bash scripts/reauth_calendar.sh")
+            print("\nOr manually recover:")
+            print("  1. Delete: rm local_data/calendar_token.json")
+            print("  2. Re-run this script to trigger OAuth re-authentication")
+        else:
+            print("\nSetup Instructions:")
+            print(
+                "1. Install Google Calendar API: pip install google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client"
+            )
+            print("2. Download credentials from Google Cloud Console")
+            print("3. Save as local_data/calendar_credentials.json")
     except Exception as e:
         print(f"❌ Error during calendar export: {str(e)}")
         print("Please check your Google Calendar access and try again.")

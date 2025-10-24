@@ -1,0 +1,49 @@
+# Pre-commit configuration for todoist-python
+# Purpose: Automate code quality checks (linting, formatting, type checking, security)
+# Usage: pre-commit run --all-files
+
+repos:
+  # Code Formatter - Makes code consistent
+  - repo: https://github.com/psf/black
+    rev: 23.12.1
+    hooks:
+      - id: black
+        exclude: ^local_data/
+
+  # Linter - Finds bugs and code quality issues
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.8
+    hooks:
+      - id: ruff
+        args: [--fix]
+        exclude: ^local_data/
+
+  # Type Checker - Validates type hints (OPTIONAL - disabled for now due to pre-existing errors)
+  # Uncomment to enable mypy type checking
+  # - repo: https://github.com/pre-commit/mirrors-mypy
+  #   rev: v1.7.1
+  #   hooks:
+  #     - id: mypy
+  #       additional_dependencies:
+  #         - types-requests
+  #         - types-PyYAML
+  #       exclude: ^local_data/
+  #       args: [--ignore-missing-imports]
+
+  # Security Scanner - Checks for common security issues
+  - repo: https://github.com/PyCQA/bandit
+    rev: 1.7.5
+    hooks:
+      - id: bandit
+        args: [-ll]  # Only report medium and high severity issues
+        additional_dependencies: ['pbr']
+        exclude: ^local_data/
+
+  # Dependency Vulnerability Scanner - Checks for known vulnerable packages
+  # Only checks requirements.txt (production dependencies)
+  - repo: https://github.com/Lucas-C/pre-commit-hooks-safety
+    rev: v1.3.1
+    hooks:
+      - id: python-safety-dependencies-check
+        files: ^requirements\.txt$  # Only check production requirements
+        exclude: ^local_data/

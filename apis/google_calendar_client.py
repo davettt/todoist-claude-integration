@@ -65,6 +65,18 @@ class GoogleCalendarClient:
                 "Install with: pip install google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client"
             )
         except Exception as e:
+            error_str = str(e)
+            # Detect expired or revoked token
+            if (
+                "invalid_grant" in error_str
+                or "Token has been expired or revoked" in error_str
+            ):
+                raise ValueError(
+                    "EXPIRED_TOKEN: Your Google Calendar token has expired or been revoked.\\n"
+                    "Run: bash scripts/reauth_calendar.sh\\n"
+                    "Or manually delete local_data/calendar_token.json and try again.\\n"
+                    "Note: Gmail uses a separate token (reauth_gmail.sh)"
+                )
             raise ValueError(f"Failed to initialize Google Calendar service: {str(e)}")
 
     def log_operation(self, operation: str, details: str = ""):

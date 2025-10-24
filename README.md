@@ -21,20 +21,26 @@
 **Want to try it right now?**
 
 ```bash
-# 1. Clone and install
+# 1. Clone and set up virtual environment
 git clone <repo-url>
 cd todoist-python
-pip install -r requirements.txt
+python3 -m venv .venv
+source .venv/bin/activate
 
-# 2. Set up credentials
+# 2. Install dependencies (use -e for editable mode)
+pip install -e .
+
+# 3. Set up credentials
 cp .env.example .env
 # Add your Todoist API token to .env
 
-# 3. Run the daily manager
+# 4. Run the daily manager
 python3 daily_manager.py
 ```
 
 **That's it!** See [Installation](#installation) for detailed setup.
+
+**For seamless daily use:** This project includes a `.envrc` file. If you have [direnv](https://direnv.net/) installed, the venv auto-activates when you enter the project directory.
 
 ---
 
@@ -56,15 +62,32 @@ git clone <repo-url>
 cd todoist-python
 ```
 
-### Step 2: Install Dependencies
+### Step 2: Create Virtual Environment
 
 ```bash
-pip install -r requirements.txt
+# Create a virtual environment
+python3 -m venv .venv
+
+# Activate it
+source .venv/bin/activate  # macOS/Linux
+# or on Windows: .venv\Scripts\activate
 ```
 
-**What this installs:** Python packages for Todoist API, Google Calendar, email processing, etc.
+**Why?** Virtual environments keep project dependencies isolated and avoid conflicts with system Python.
 
-### Step 3: Set Up API Credentials
+### Step 3: Install Dependencies
+
+```bash
+# Install production requirements
+pip install -r requirements.txt
+
+# Install package in editable mode
+pip install -e .
+```
+
+**What this installs:** Python packages for Todoist API, Google Calendar, email processing, etc. The `-e` flag keeps the package linked to your project files.
+
+### Step 4: Set Up API Credentials
 
 ```bash
 # Copy the example file
@@ -80,7 +103,26 @@ Get your Todoist API token from: [Todoist Integrations](https://todoist.com/pref
 - See [Setting Up Calendar Integration](#setting-up-calendar-integration) if you want calendar features
 - Not required for basic task management
 
-### Step 4: First Run
+### Step 5 (Optional): For Daily Use - Auto-Activate with direnv
+
+If you use multiple tools daily and want automatic venv switching:
+
+```bash
+# One-time setup
+brew install direnv
+
+# Add to ~/.zshrc (after starship init):
+eval "$(direnv hook zsh)"
+
+# Reload: source ~/.zshrc
+
+# Then in this project directory:
+direnv allow
+```
+
+**Result:** When you `cd` into this directory, the venv auto-activates. When you leave, it deactivates. Perfect for switching between multiple projects!
+
+### Step 6: First Run
 
 ```bash
 python3 daily_manager.py
@@ -398,9 +440,20 @@ pip install -r requirements.txt
 - Verify file location: `local_data/calendar_credentials.json` or `local_data/gmail_credentials.json`
 - Re-download from Google Cloud Console
 
-**"Token expired" or "Invalid credentials"**
-- Delete token file: `local_data/calendar_token.json` or `local_data/gmail_token.json`
-- Re-run the script to re-authorize
+**"Token expired", "Invalid credentials", or "Precondition check failed"**
+- This means your OAuth token is invalid or has been revoked
+- **Gmail token issue? Run:**
+  ```bash
+  bash scripts/reauth_gmail.sh
+  ```
+- **Calendar token issue? Run:**
+  ```bash
+  bash scripts/reauth_calendar.sh
+  ```
+- **Note:** Gmail and Calendar use separate Google accounts/tokens. Reauthing one won't affect the other.
+- **Manual fix (if scripts aren't available):**
+  - Delete the specific token: `rm local_data/gmail_token.json` OR `rm local_data/calendar_token.json`
+  - Re-run your script to trigger OAuth re-authentication
 
 **"No emails found" (but you forwarded emails)**
 - Check emails forwarded to correct inbox

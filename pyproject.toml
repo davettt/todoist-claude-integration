@@ -29,6 +29,7 @@ select = ["E", "F", "I", "W"]
 # Ignore some rules:
 ignore = [
     "E501",  # Line too long (Black handles this)
+    "E402",  # Module level import not at top of file (pre-existing code style)
 ]
 
 # Allow unused imports in __init__.py files

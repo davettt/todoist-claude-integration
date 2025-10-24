@@ -200,7 +200,9 @@ class EmailFeedbackTracker:
         trend = (
             "improving"
             if recent_accuracy > overall_accuracy
-            else "stable" if recent_accuracy == overall_accuracy else "declining"
+            else "stable"
+            if recent_accuracy == overall_accuracy
+            else "declining"
         )
 
         return {

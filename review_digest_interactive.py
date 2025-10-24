@@ -435,7 +435,9 @@ def mark_digest_reviewed(digest_path: str):
         print(f"📂 Moved to: {reviewed_dir}/")
         print(f"📝 File: {filename}")
         print()
-        print("💡 Next time you review (option 6), you'll get the latest unreviewed digest!")
+        print(
+            "💡 Next time you review (option 6), you'll get the latest unreviewed digest!"
+        )
         print()
 
     except Exception as e:

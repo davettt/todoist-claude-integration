@@ -67,7 +67,44 @@ class GmailClient:
                 "Install with: pip install google-auth google-auth-oauthlib google-auth-httplib2 google-api-python-client"
             )
         except Exception as e:
+            error_str = str(e)
+            # Detect expired or revoked token
+            if (
+                "invalid_grant" in error_str
+                or "Token has been expired or revoked" in error_str
+            ):
+                raise ValueError(
+                    "EXPIRED_TOKEN: Your Gmail token has expired or been revoked.\n"
+                    "Run: bash scripts/reauth_gmail.sh\n"
+                    "Or manually delete local_data/gmail_token.json and try again."
+                )
             raise ValueError(f"Failed to initialize Gmail service: {str(e)}")
+
+    def _handle_api_error(
+        self, error: Exception, operation: str = "Gmail API operation"
+    ) -> bool:
+        """
+        Handle Gmail API errors with user-friendly messages.
+        Detects token/auth issues and provides recovery instructions.
+        """
+        error_str = str(error)
+        print(f"❌ Error during {operation}: {error_str}")
+
+        # Detect token/authentication errors
+        if (
+            "failedPrecondition" in error_str
+            or "Precondition check failed" in error_str
+        ):
+            print(
+                "\n🔐 Authentication Error - Your Gmail token may be invalid or revoked."
+            )
+            print("Quick fix - run this command:")
+            print("  bash scripts/reauth_gmail.sh")
+            print(
+                "\nNote: This only re-authenticates Gmail. Calendar uses a separate account/token."
+            )
+            return True  # Error was handled with user guidance
+        return False  # Regular error, no special handling
 
     def log_operation(self, operation: str, details: str = ""):
         """Log API operations with timestamp"""
@@ -102,7 +139,7 @@ class GmailClient:
             return messages
 
         except Exception as e:
-            print(f"❌ Error fetching unread messages: {str(e)}")
+            self._handle_api_error(e, "fetching unread messages")
             return None
 
     def get_message_details(self, message_id: str) -> Optional[Dict[str, Any]]:
@@ -144,7 +181,7 @@ class GmailClient:
             return result
 
         except Exception as e:
-            print(f"❌ Error fetching message {message_id}: {str(e)}")
+            self._handle_api_error(e, f"fetching message {message_id}")
             return None
 
     def _extract_body(self, payload: Dict[str, Any]) -> str:
@@ -227,7 +264,7 @@ class GmailClient:
             return True
 
         except Exception as e:
-            print(f"❌ Error marking message as read: {str(e)}")
+            self._handle_api_error(e, "marking message as read")
             return False
 
     def archive_message(self, message_id: str) -> bool:
@@ -249,7 +286,7 @@ class GmailClient:
             return True
 
         except Exception as e:
-            print(f"❌ Error archiving message: {str(e)}")
+            self._handle_api_error(e, "archiving message")
             return False
 
     def trash_message(self, message_id: str) -> bool:
@@ -271,7 +308,7 @@ class GmailClient:
             return True
 
         except Exception as e:
-            print(f"❌ Error trashing message: {str(e)}")
+            self._handle_api_error(e, "trashing message")
             return False
 
     def delete_message(self, message_id: str) -> bool:
@@ -296,7 +333,7 @@ class GmailClient:
             return True
 
         except Exception as e:
-            print(f"❌ Error deleting message: {str(e)}")
+            self._handle_api_error(e, "deleting message")
             return False
 
     def extract_sender_info(self, from_header: str) -> Dict[str, str]:

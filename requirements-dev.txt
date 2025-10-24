@@ -6,6 +6,13 @@ ruff>=0.1.0          # Fast linter (replaces flake8, pylint, isort)
 black>=23.0.0        # Code formatter (opinionated, consistent)
 mypy>=1.0.0          # Type checker (optional - validates type hints)
 
+# Security Tools
+bandit>=1.7.0        # Security scanner (finds common security issues in code)
+safety>=2.0.0        # Dependency vulnerability scanner (checks for known vulnerable packages)
+
+# Pre-commit Framework
+pre-commit>=3.0.0    # Git hook framework for running checks before commits
+
 # Testing Tools (for future use)
 pytest>=7.0.0        # Testing framework
 pytest-cov>=4.0.0    # Coverage reporting
