@@ -244,7 +244,8 @@ class LearningEngine:
 
     def _suggest_interests_to_add(self, entries: List[Dict[str, Any]]) -> List[Dict]:
         """Suggest interests based on AI-analyzed high-value content patterns"""
-        high_value_entries = self._get_high_value_entries(entries[-30:])
+        # Analyze last 100 entries for better pattern detection (previously was 30)
+        high_value_entries = self._get_high_value_entries(entries[-100:])
 
         if not high_value_entries:
             return []
@@ -560,15 +561,15 @@ class LearningEngine:
         return analysis
 
     def _get_high_value_entries(self, entries: List[Dict[str, Any]]) -> List[Dict]:
-        """Filter entries to only those with high value (escalations or high-priority agreements)"""
+        """Filter entries to only those with high value (escalations or useful agreements)"""
         high_value = []
         for entry in entries:
-            predicted_level = entry.get("predicted_level", "").lower()
             actual_interest = entry.get("actual_interest", "")
 
-            if actual_interest == "more_important" or (
-                actual_interest == "useful" and predicted_level in ["high", "urgent"]
-            ):
+            # High-value if: escalated, or marked useful at any level
+            # Previously was too restrictive (only useful + high/urgent predictions)
+            # Now includes useful emails at medium level too, since user agreed with prediction
+            if actual_interest == "more_important" or actual_interest == "useful":
                 high_value.append(entry)
 
         return high_value
