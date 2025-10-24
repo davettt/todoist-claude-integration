@@ -60,19 +60,20 @@ def print_menu():
     print("  6. 📧 Review digest interactively (view + rate in one flow)")
     print("  7. 👁️ View my email profile (interests, projects, trusted senders)")
     print("  8. ⚙️ Manage my email profile (add/remove interests, projects)")
+    print("  9. 🧠 Analyze AI learning & suggestions (see what system learned)")
     print()
     print("📊 VIEWS:")
-    print("  9. 📋 View my current tasks")
-    print("  10. 📅 View my calendar")
+    print("  10. 📋 View my current tasks")
+    print("  11. 📅 View my calendar")
     print()
     print("💾 BACKUP:")
-    print("  11. 💾 Create backup (before making changes)")
-    print("  12. 📂 Manage backups (list/restore)")
+    print("  12. 💾 Create backup (before making changes)")
+    print("  13. 📂 Manage backups (list/restore)")
     print()
     print("⚙️ SETUP & HELP:")
-    print("  13. 🔧 First-time setup")
-    print("  14. 📖 Show full workflow guide")
-    print("  15. 🚪 Exit")
+    print("  14. 🔧 First-time setup")
+    print("  15. 📖 Show full workflow guide")
+    print("  16. 🚪 Exit")
     print()
 
 
@@ -553,6 +554,24 @@ def manage_profile():
         print(f"❌ Error managing profile: {str(e)}")
 
 
+def analyze_learning():
+    """Analyze AI learning and show suggestions"""
+    print("\n" + "=" * 60)
+    print("🧠 AI LEARNING ANALYSIS")
+    print("=" * 60)
+    print()
+    print("View how the AI has learned from your feedback,")
+    print("accuracy trends, and get optimization suggestions.")
+    print()
+
+    try:
+        run_script("learning_analyzer.py", "Starting AI learning analyzer")
+
+    except Exception as e:
+        print()
+        print(f"❌ Error: {str(e)}")
+
+
 def show_full_workflow():
     """Display the full workflow guide"""
     print("\n" + "=" * 60)
@@ -624,7 +643,7 @@ def main():
         print_menu()
 
         try:
-            choice = input("Choose an option (1-15): ").strip()
+            choice = input("Choose an option (1-16): ").strip()
 
             if choice == "1":
                 export_daily_data()
@@ -651,29 +670,32 @@ def main():
                 manage_profile()
 
             elif choice == "9":
-                view_current_tasks()
+                analyze_learning()
 
             elif choice == "10":
-                view_calendar()
+                view_current_tasks()
 
             elif choice == "11":
-                create_backup()
+                view_calendar()
 
             elif choice == "12":
-                manage_backups()
+                create_backup()
 
             elif choice == "13":
-                first_time_setup()
+                manage_backups()
 
             elif choice == "14":
-                show_full_workflow()
+                first_time_setup()
 
             elif choice == "15":
+                show_full_workflow()
+
+            elif choice == "16":
                 print("\n👋 Have a productive day!")
                 break
 
             else:
-                print("\n❌ Invalid choice. Please choose 1-15.")
+                print("\n❌ Invalid choice. Please choose 1-16.")
 
             input("\n⏎ Press Enter to continue...")
 

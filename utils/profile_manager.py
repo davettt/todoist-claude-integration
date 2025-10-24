@@ -464,6 +464,231 @@ class ProfileManager:
         print("\n✅ Profile reset to defaults")
         print("💾 Your previous profile was backed up")
 
+    def find_similar_interests(self, new_interest: str) -> list[str]:
+        """Find interests similar to the one being added
+
+        Checks for:
+        - Exact matches (case-insensitive)
+        - Substring matches
+        - Format variations (e.g., "Machine Learning" vs "ML")
+        """
+        similar = []
+        new_lower = new_interest.lower().strip()
+        current_interests = self.profile.get("core_interests", [])
+
+        # Common abbreviations and variations
+        variations_map = {
+            "machine learning": ["ml", "deep learning"],
+            "ml": ["machine learning"],
+            "artificial intelligence": ["ai"],
+            "ai": ["artificial intelligence"],
+            "javascript": ["js"],
+            "js": ["javascript"],
+            "typescript": ["ts"],
+            "ts": ["typescript"],
+            "python": ["py"],
+            "react": ["reactjs"],
+            "docker": ["containerization"],
+            "kubernetes": ["k8s"],
+            "k8s": ["kubernetes"],
+        }
+
+        for interest in current_interests:
+            interest_lower = interest.lower().strip()
+
+            # Exact match (case-insensitive)
+            if new_lower == interest_lower:
+                similar.append(interest)
+                continue
+
+            # Substring match
+            if new_lower in interest_lower or interest_lower in new_lower:
+                similar.append(interest)
+                continue
+
+            # Check variations
+            for variant_key, variant_list in variations_map.items():
+                if new_lower == variant_key and interest_lower in variant_list:
+                    similar.append(interest)
+                    break
+                if new_lower in variant_list and interest_lower == variant_key:
+                    similar.append(interest)
+                    break
+
+        return similar
+
+    def batch_add_interests(
+        self, interests_to_add: list[str], backup_before: bool = True
+    ) -> dict[str, any]:
+        """Add multiple interests at once with duplicate detection
+
+        Args:
+            interests_to_add: List of interests to add
+            backup_before: Whether to backup profile before changes
+
+        Returns:
+            Dictionary with results: {
+                'added': [list of successfully added],
+                'duplicates': [list of duplicates skipped],
+                'similar': {interest: [similar_interests]},
+                'total_added': count,
+                'backup_created': bool
+            }
+        """
+        result = {
+            "added": [],
+            "duplicates": [],
+            "similar": {},
+            "total_added": 0,
+            "backup_created": False,
+        }
+
+        if not interests_to_add:
+            return result
+
+        # Create backup if requested
+        if backup_before:
+            self._backup_profile()
+            result["backup_created"] = True
+
+        current = self.profile.get("core_interests", [])
+        current_lower = [i.lower() for i in current]
+
+        for interest in interests_to_add:
+            interest = interest.strip()
+            if not interest:
+                continue
+
+            # Check for exact duplicates
+            if interest.lower() in current_lower:
+                result["duplicates"].append(interest)
+                continue
+
+            # Check for similar interests
+            similar = self.find_similar_interests(interest)
+            if similar:
+                result["similar"][interest] = similar
+                # Don't add if there are similar interests - ask user to consolidate
+                continue
+
+            # Add the interest
+            current.append(interest)
+            result["added"].append(interest)
+            current_lower.append(interest.lower())
+
+        result["total_added"] = len(result["added"])
+
+        # Save if anything was added
+        if result["added"]:
+            self.profile["core_interests"] = current
+            self._save_profile()
+
+        return result
+
+    def consolidate_interests(
+        self,
+        interests_to_remove: list[str],
+        consolidated_name: str,
+        backup_before: bool = True,
+    ) -> dict[str, any]:
+        """Consolidate similar interests into one
+
+        Args:
+            interests_to_remove: List of similar interests to remove
+            consolidated_name: Single consolidated interest name
+            backup_before: Whether to backup before changes
+
+        Returns:
+            Dictionary with results
+        """
+        result = {
+            "removed": [],
+            "added": False,
+            "backup_created": False,
+        }
+
+        if backup_before:
+            self._backup_profile()
+            result["backup_created"] = True
+
+        current = self.profile.get("core_interests", [])
+
+        # Remove the old interests
+        for interest in interests_to_remove:
+            if interest in current:
+                current.remove(interest)
+                result["removed"].append(interest)
+
+        # Add consolidated interest if not already present
+        if result["removed"] and consolidated_name not in current:
+            current.append(consolidated_name)
+            result["added"] = True
+
+        if result["removed"]:
+            self.profile["core_interests"] = current
+            self._save_profile()
+
+        return result
+
+    def get_profile_comparison(
+        self, before: dict[str, any], after: dict[str, any]
+    ) -> dict[str, any]:
+        """Get detailed comparison of profile changes
+
+        Args:
+            before: Profile state before changes
+            after: Profile state after changes
+
+        Returns:
+            Dictionary with before/after comparison and summary
+        """
+        comparison = {
+            "interests": {"added": [], "removed": []},
+            "senders": {"added": [], "removed": []},
+            "projects": {"added": [], "removed": []},
+            "summary": "",
+        }
+
+        # Compare interests
+        before_interests = set(before.get("core_interests", []))
+        after_interests = set(after.get("core_interests", []))
+
+        comparison["interests"]["added"] = list(after_interests - before_interests)
+        comparison["interests"]["removed"] = list(before_interests - after_interests)
+
+        # Compare trusted senders
+        before_senders = set(before.get("trusted_senders", []))
+        after_senders = set(after.get("trusted_senders", []))
+
+        comparison["senders"]["added"] = list(after_senders - before_senders)
+        comparison["senders"]["removed"] = list(before_senders - after_senders)
+
+        # Compare projects
+        before_projects = set(before.get("active_projects", []))
+        after_projects = set(after.get("active_projects", []))
+
+        comparison["projects"]["added"] = list(after_projects - before_projects)
+        comparison["projects"]["removed"] = list(before_projects - after_projects)
+
+        # Build summary
+        changes = []
+        if comparison["interests"]["added"]:
+            changes.append(f"+{len(comparison['interests']['added'])} interest(s)")
+        if comparison["interests"]["removed"]:
+            changes.append(f"-{len(comparison['interests']['removed'])} interest(s)")
+        if comparison["senders"]["added"]:
+            changes.append(f"+{len(comparison['senders']['added'])} sender(s)")
+        if comparison["senders"]["removed"]:
+            changes.append(f"-{len(comparison['senders']['removed'])} sender(s)")
+        if comparison["projects"]["added"]:
+            changes.append(f"+{len(comparison['projects']['added'])} project(s)")
+        if comparison["projects"]["removed"]:
+            changes.append(f"-{len(comparison['projects']['removed'])} project(s)")
+
+        comparison["summary"] = ", ".join(changes) if changes else "No changes"
+
+        return comparison
+
     def interactive_menu(self) -> None:
         """Interactive profile management menu"""
         while True:

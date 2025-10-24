@@ -2,7 +2,7 @@
 
 *Manage your Todoist tasks through natural conversations with Claude AI - no clicking, just talking.*
 
-**Current Version:** v1.3.1 | [Changelog](CHANGELOG.md)
+**Current Version:** v1.5.6 | [Changelog](CHANGELOG.md)
 
 ---
 
@@ -10,7 +10,11 @@
 
 - 🗣️ **Chat naturally with Claude** - "I finished the report" or "Add grocery shopping for tomorrow"
 - 📋 **Automatic task management** - Claude creates/updates/completes tasks in Todoist
-- 📧 **Smart email processing** - Forward emails to auto-create tasks with AI digest
+- 📧 **Smart email digests** - AI analyzes forwarded emails, creates intelligent digests with interest-level categorization
+- 💬 **Interactive email review** - Rate emails with feedback (👍 👎 ⬆️ ⬇️), help AI learn your preferences
+- 🧠 **AI learning system** - System learns from your feedback and suggests profile improvements
+- 📊 **Content pattern analysis** - Automatically detects technologies and topics you care about
+- 🎯 **Smart profile updates** - Apply AI-identified interests to your profile with one click
 - 📅 **Calendar integration** - Claude considers your schedule when planning tasks
 - ✨ **Simple workflow** - Export → Chat with Claude → Apply changes
 
@@ -566,6 +570,6 @@ MIT License - See [LICENSE](LICENSE) for details.
 
 ---
 
-**Version:** v1.3.1 | **Last updated:** 2025-10-12
+**Version:** v1.5.6 | **Last updated:** 2025-10-25
 
 **Ready to get started?** Run `python3 daily_manager.py` 🚀

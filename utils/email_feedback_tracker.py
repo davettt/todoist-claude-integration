@@ -62,6 +62,7 @@ class EmailFeedbackTracker:
         actual_interest: str,
         feedback_type: str,
         notes: str = "",
+        ai_analysis: Dict[str, Any] = None,
     ) -> bool:
         """
         Record user feedback on an email prediction
@@ -73,6 +74,7 @@ class EmailFeedbackTracker:
             actual_interest: User's actual interest (useful/not_interesting/more_important/less_important)
             feedback_type: Type of feedback (thumbs_up/thumbs_down/escalate/downgrade)
             notes: Optional user notes
+            ai_analysis: Optional rich AI analysis data (category, key_points, technologies, etc.)
 
         Returns:
             True if feedback recorded successfully
@@ -91,6 +93,10 @@ class EmailFeedbackTracker:
                 ),
             }
 
+            # Add optional rich AI analysis if provided
+            if ai_analysis:
+                entry["ai_analysis"] = ai_analysis
+
             self.feedback_data["feedback_entries"].append(entry)
             self._update_stats()
             self._save_feedback_log()
@@ -103,44 +109,43 @@ class EmailFeedbackTracker:
 
     def _determine_accuracy(self, predicted: str, actual: str) -> bool:
         """
-        Determine if prediction was accurate based on feedback
+        Determine if prediction was accurate based on user feedback
+
+        Logic:
+        - 'useful' = user agrees with the predicted priority level (ACCURATE)
+        - 'not_interesting' = user thinks it should be lower priority (only accurate if LOW)
+        - 'more_important' = user thinks it should be higher priority (INACCURATE)
+        - 'less_important' = user thinks it should be lower priority (INACCURATE)
 
         Args:
-            predicted: Predicted interest level
-            actual: Actual user interest
+            predicted: Predicted interest level (urgent, high, medium, low)
+            actual: Actual user feedback (useful, not_interesting, more_important, less_important)
 
         Returns:
-            True if prediction was accurate
+            True if prediction was accurate, False otherwise
         """
-        # Mapping of feedback to what it means
-        accuracy_map = {
-            "useful": {
-                "urgent": True,
-                "high": True,
-                "medium": True,  # If they found it useful, medium was acceptable
-                "low": False,  # Should have been higher
-            },
-            "not_interesting": {
-                "urgent": False,
-                "high": False,
-                "medium": False,
-                "low": True,  # Correctly identified as low interest
-            },
-            "more_important": {
-                "urgent": False,  # Should have been urgent
-                "high": False,  # Should have been higher
-                "medium": False,
-                "low": False,
-            },
-            "less_important": {
-                "urgent": False,  # Was overrated
-                "high": False,
-                "medium": True,  # Medium would have been better
-                "low": True,  # Low is correct
-            },
-        }
+        # User agrees with prediction - always accurate regardless of level
+        if actual == "useful":
+            return True
 
-        return accuracy_map.get(actual, {}).get(predicted, False)
+        # User thinks it should be lower priority
+        # Only accurate if we already predicted LOW (can't go lower)
+        elif actual == "not_interesting":
+            return predicted == "low"
+
+        # User thinks it should be higher priority
+        # Prediction was too low - never accurate
+        elif actual == "more_important":
+            return False
+
+        # User thinks it should be lower priority
+        # Prediction was too high - never accurate
+        elif actual == "less_important":
+            return False
+
+        # Unknown feedback type
+        else:
+            return False
 
     def _update_stats(self):
         """Update accuracy statistics"""

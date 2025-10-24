@@ -92,6 +92,15 @@ def review_digest_interactive(digest_path: str = None):
         feedback_type, actual_interest = rating
         notes = input("Optional notes (or press Enter to skip): ").strip()
 
+        # Build AI analysis data from parsed email
+        ai_analysis = {
+            "category": email.get("category", ""),
+            "confidence": email.get("confidence", ""),
+            "technologies_mentioned": email.get("technologies", []),
+            "topics_identified": email.get("topics", []),
+            "reasoning": email.get("reasoning", ""),
+        }
+
         success = tracker.record_feedback(
             email_subject=email["subject"],
             email_from=email["from"],
@@ -99,6 +108,7 @@ def review_digest_interactive(digest_path: str = None):
             actual_interest=actual_interest,
             feedback_type=feedback_type,
             notes=notes,
+            ai_analysis=ai_analysis,
         )
 
         if success:
@@ -303,6 +313,11 @@ def parse_digest_with_content(digest_path: str) -> list:
     current_level = None
     current_email = {}
     in_key_points = False
+    # New structured format section flags
+    in_summary_section = False
+    in_relevance_section = False
+    in_details_section = False
+    in_decision_section = False
 
     try:
         with open(digest_path, "r") as f:
@@ -335,11 +350,24 @@ def parse_digest_with_content(digest_path: str) -> list:
                     "date": "",
                     "category": "",
                     "confidence": "",
+                    "technologies": [],
+                    "topics": [],
+                    # New structured format fields
+                    "summary": "",
+                    "relevance": "",
+                    "key_details": [],
+                    "decision_point": "",
+                    # Legacy fields (for backward compatibility)
                     "bullets": [],
                     "reasoning": "",
                     "gmail_id": "",
                 }
                 in_key_points = False
+                # Reset structured format section flags
+                in_summary_section = False
+                in_relevance_section = False
+                in_details_section = False
+                in_decision_section = False
 
             # Gmail ID comment
             elif line_stripped.startswith("<!-- gmail_id:") and current_email:
@@ -374,7 +402,76 @@ def parse_digest_with_content(digest_path: str) -> list:
                 if len(parts) > 1 and "Confidence:" in parts[1]:
                     current_email["confidence"] = parts[1].split(":")[1].strip()
 
-            # Key points section
+            # Technologies line
+            elif line_stripped.startswith("**Technologies:**") and current_email:
+                techs = line_stripped[17:].strip()
+                if techs:
+                    current_email["technologies"] = [
+                        t.strip() for t in techs.split(",")
+                    ]
+
+            # Topics line
+            elif line_stripped.startswith("**Topics:**") and current_email:
+                topics = line_stripped[11:].strip()
+                if topics:
+                    current_email["topics"] = [t.strip() for t in topics.split(",")]
+
+            # New structured format parsing markers
+            elif line_stripped.startswith("**📋 What's This About:**") and current_email:
+                in_summary_section = True
+
+            elif line_stripped.startswith("**🎯 Why It's Relevant:**") and current_email:
+                in_summary_section = False
+                in_relevance_section = True
+
+            elif line_stripped.startswith("**💡 Key Details:**") and current_email:
+                in_relevance_section = False
+                in_details_section = True
+
+            elif line_stripped.startswith("**📧 Decision Point:**") and current_email:
+                in_details_section = False
+                in_decision_section = True
+
+            elif line_stripped.startswith("**🎯 Why Flagged Low:**") and current_email:
+                in_decision_section = False
+                in_relevance_section = True
+
+            # Capture content based on section flags
+            elif (
+                line.strip()
+                and not line_stripped.startswith("**")
+                and not line_stripped.startswith("<!-- gmail_id")
+                and current_email
+            ):
+                # Capture summary
+                if in_summary_section:
+                    if not current_email.get("summary"):
+                        current_email["summary"] = line_stripped
+                    else:
+                        current_email["summary"] += " " + line_stripped
+
+                # Capture relevance
+                elif in_relevance_section:
+                    if not current_email.get("relevance"):
+                        current_email["relevance"] = line_stripped
+                    else:
+                        current_email["relevance"] += " " + line_stripped
+
+                # Capture key details
+                elif in_details_section:
+                    if line_stripped.startswith("• "):
+                        detail = line_stripped[2:].strip()
+                        if detail:
+                            current_email["key_details"].append(detail)
+
+                # Capture decision point
+                elif in_decision_section:
+                    if not current_email.get("decision_point"):
+                        current_email["decision_point"] = line_stripped
+                    else:
+                        current_email["decision_point"] += " " + line_stripped
+
+            # Key points section (legacy format)
             elif line_stripped.startswith("**Key Points:**"):
                 in_key_points = True
 

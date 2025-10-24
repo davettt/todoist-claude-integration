@@ -140,24 +140,31 @@ OUTPUT FORMAT (JSON only, no markdown):
 {{
   "level": "urgent|high|medium|low",
   "category": "security|account|trusted_content|promotional|informational|other",
-  "bullets": [
-    {{
-      "content": "Key point from email (specific, actionable)",
-      "reasoning": "Why this matters to the user"
-    }}
+  "summary": "Comprehensive 3-4 sentence summary covering main points, key data, and conclusions. Should provide enough detail to understand core content and value without reading full email.",
+  "relevance": "Clear explanation of how this matches your interests/projects/trusted sources. Be specific about connections to user's profile.",
+  "key_details": [
+    "Specific actionable item, data point, or insight #1",
+    "Important recommendation or trend #2",
+    "Additional key point or notable finding #3"
   ],
+  "decision_point": "Describe what additional value reading the full email would provide. E.g., 'deeper technical details', 'step-by-step instructions', 'complete dataset', 'implementation guide', etc.",
   "overall_reasoning": "Explain why you chose this interest level, considering user's profile",
-  "confidence": "high|medium|low"
+  "confidence": "high|medium|low",
+  "technologies_mentioned": ["Technology or tool explicitly mentioned in the email"],
+  "topics_identified": ["Topic or theme the email is about"]
 }}
 
 IMPORTANT:
-- Be specific in bullets (quotes, facts, actionable items, concrete details)
-- For urgent/high: Extract 2-3 most important points with actionable context
-- For medium: Extract 2-3 key points with SPECIFIC details (what exactly is offered, specific topics covered, concrete takeaways) so user can decide if worth reading
-- For low: Extract 1-2 specific points explaining exactly what the email contains and why it's skippable
-- Include specific examples, topics, or quotes from the email - don't be vague
-- If there are action items (links to click, things to do), mention them specifically
-- Consider user's specific interests and projects
+- Summary should be 3-4 sentences and comprehensive, enabling confident decisions without reading full email
+- Relevance must be specific to user's profile (not generic)
+- Key Details should be concrete: quotes, numbers, specific features, exact recommendations
+- Decision Point should clearly indicate what value the full email adds (not just "more details")
+- For urgent/high: Prioritize actionable items and critical information
+- For medium: Include specific details on what's offered so user can decide if worth reading
+- For low: Explain clearly why it's not relevant rather than listing content
+- Include specific examples and quotes from email - don't be vague
+- If action items exist (register, download, apply), mention specifically
+- Consider user's specific interests, projects, and trusted senders
 - Urgency beats interest (security alert is urgent even if not interesting)
 
 Respond ONLY with valid JSON. No backticks, no markdown, ONLY JSON."""

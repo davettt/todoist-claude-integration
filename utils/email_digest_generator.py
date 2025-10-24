@@ -8,8 +8,10 @@ import os
 from datetime import datetime, timedelta
 from typing import Any, Dict, List, Optional
 
+from utils.adaptive_ai_context import AdaptiveAIContext
 from utils.claude_api_client import ClaudeAPIClient
 from utils.email_sanitizer import sanitize_email_content
+from utils.learning_engine import LearningEngine
 
 
 class EmailDigestGenerator:
@@ -22,8 +24,24 @@ class EmailDigestGenerator:
         self.profile_path = "local_data/personal_data/email_interest_profile.json"
         self.user_profile = self._load_user_profile()
 
+        # Initialize learning components
+        self.learning_engine = None
+        self.adaptive_context = None
+        self.learning_context = None
+        self._init_learning()
+
         # Ensure directory exists
         os.makedirs(self.digest_dir, exist_ok=True)
+
+    def _init_learning(self):
+        """Initialize learning engine and adaptive context"""
+        try:
+            self.learning_engine = LearningEngine()
+            self.adaptive_context = AdaptiveAIContext()
+            self.learning_context = self.learning_engine.get_adaptive_context()
+        except Exception:
+            # Learning initialization failed, continue without it
+            self.learning_context = {"status": "unavailable"}
 
     def _load_user_profile(self) -> Dict[str, Any]:
         """Load user's interest profile"""
@@ -169,9 +187,33 @@ class EmailDigestGenerator:
                 return None
             print()
 
-        # Analyze each email
-        print("🔍 Analyzing emails with Claude AI...")
-        print()
+        # Show learning info if available
+        if self.learning_context and self.learning_context.get("status") == "ready":
+            print("🤖 Analyzing emails with your learning profile...")
+            print()
+
+            # Show what learning adjustments are being applied
+            adjustments = self.learning_context.get("learning_adjustments", {})
+            if adjustments:
+                print("   📈 Learning adjustments being applied:")
+                if adjustments.get("use_learned_sender_preferences"):
+                    print("     • Using learned sender preferences")
+                if adjustments.get("emphasize_strongest_areas"):
+                    print("     • Emphasizing your strongest areas")
+                if adjustments.get("apply_confidence_adjustments"):
+                    print("     • Applying confidence-based adjustments")
+
+                # Show strongest areas
+                strongest = self.learning_context.get("learned_preferences", {}).get(
+                    "strongest_areas", []
+                )
+                if strongest:
+                    print(f"     • Strong match for: {', '.join(strongest[:2])}")
+
+                print()
+        else:
+            print("🔍 Analyzing emails with Claude AI...")
+            print()
 
         analyzed_emails = []
         for i, email in enumerate(emails, 1):
@@ -413,28 +455,67 @@ class EmailDigestGenerator:
             category = analysis.get("category", "other")
             confidence = analysis.get("confidence", "medium")
             lines.append(f"**Category:** {category} | **Confidence:** {confidence}")
+
+            # Add technologies and topics if present
+            technologies = analysis.get("technologies_mentioned", [])
+            topics = analysis.get("topics_identified", [])
+            if technologies:
+                lines.append(f"**Technologies:** {', '.join(technologies)}")
+            if topics:
+                lines.append(f"**Topics:** {', '.join(topics)}")
             lines.append("")
 
-            # Key points
-            bullets = analysis.get("bullets", [])
-            if bullets:
-                lines.append("**Key Points:**")
-                for bullet in bullets:
-                    content = bullet.get("content", "")
-                    reasoning = bullet.get("reasoning", "")
+            # Use new structured format if available, fall back to old format
+            summary = analysis.get("summary")
+            relevance = analysis.get("relevance")
+            key_details = analysis.get("key_details", [])
+            decision_point = analysis.get("decision_point")
 
-                    lines.append(f"- {content}")
-                    if show_reasoning and reasoning:
-                        lines.append(f"  - *Why: {reasoning}*")
-
+            if summary:
+                # New structured format
+                lines.append("**📋 What's This About:**")
+                lines.append(summary)
                 lines.append("")
 
-            # Overall reasoning
-            if show_reasoning:
-                overall = analysis.get("overall_reasoning", "")
-                if overall:
-                    lines.append(f"**AI Analysis:** {overall}")
+                if relevance:
+                    lines.append("**🎯 Why It's Relevant:**")
+                    lines.append(relevance)
                     lines.append("")
+
+                if key_details:
+                    lines.append("**💡 Key Details:**")
+                    for detail in key_details:
+                        lines.append(f"• {detail}")
+                    lines.append("")
+
+                if decision_point:
+                    lines.append("**📧 Decision Point:**")
+                    lines.append(
+                        f"Worth reading if you want {decision_point.lower() if not decision_point[0].isupper() else decision_point}"
+                    )
+                    lines.append("")
+
+            else:
+                # Fallback to old bullet format for backward compatibility
+                bullets = analysis.get("bullets", [])
+                if bullets:
+                    lines.append("**Key Points:**")
+                    for bullet in bullets:
+                        content = bullet.get("content", "")
+                        reasoning = bullet.get("reasoning", "")
+
+                        lines.append(f"- {content}")
+                        if show_reasoning and reasoning:
+                            lines.append(f"  - *Why: {reasoning}*")
+
+                    lines.append("")
+
+                # Overall reasoning
+                if show_reasoning:
+                    overall = analysis.get("overall_reasoning", "")
+                    if overall:
+                        lines.append(f"**AI Analysis:** {overall}")
+                        lines.append("")
 
             lines.append("---")
             lines.append("")
@@ -480,6 +561,14 @@ class EmailDigestGenerator:
             if original_sender and forwarder != "Unknown":
                 lines.append(f"**Forwarded by:** {forwarder}")
 
+            # Add technologies and topics if present
+            technologies = analysis.get("technologies_mentioned", [])
+            topics = analysis.get("topics_identified", [])
+            if technologies:
+                lines.append(f"**Technologies:** {', '.join(technologies)}")
+            if topics:
+                lines.append(f"**Topics:** {', '.join(topics)}")
+
             # Add Gmail ID as HTML comment
             gmail_id = email.get("id", "")
             if gmail_id:
@@ -487,26 +576,41 @@ class EmailDigestGenerator:
 
             lines.append("")
 
-            # Show all bullet points (no sub-reasoning, just main content)
-            bullets = analysis.get("bullets", [])
-            if bullets:
-                if len(bullets) == 1:
-                    # Single bullet: show as summary
-                    lines.append(f"**Summary:** {bullets[0].get('content', '')}")
-                else:
-                    # Multiple bullets: show as list
-                    lines.append("**What's in it:**")
-                    for bullet in bullets:
-                        content = bullet.get("content", "")
-                        if content:
-                            lines.append(f"- {content}")
+            # Use new structured format if available, fall back to old format
+            summary = analysis.get("summary")
+            relevance = analysis.get("relevance")
+
+            if summary:
+                # New structured format for LOW interest
+                lines.append("**📋 Summary:**")
+                lines.append(summary)
                 lines.append("")
 
-            # Show overall reasoning (why it's low priority)
-            overall = analysis.get("overall_reasoning", "")
-            if overall:
-                lines.append(f"**Why low priority:** {overall}")
-                lines.append("")
+                if relevance:
+                    lines.append("**🎯 Why Flagged Low:**")
+                    lines.append(relevance)
+                    lines.append("")
+            else:
+                # Fallback to old format
+                bullets = analysis.get("bullets", [])
+                if bullets:
+                    if len(bullets) == 1:
+                        # Single bullet: show as summary
+                        lines.append(f"**Summary:** {bullets[0].get('content', '')}")
+                    else:
+                        # Multiple bullets: show as list
+                        lines.append("**What's in it:**")
+                        for bullet in bullets:
+                            content = bullet.get("content", "")
+                            if content:
+                                lines.append(f"- {content}")
+                    lines.append("")
+
+                # Show overall reasoning (why it's low priority)
+                overall = analysis.get("overall_reasoning", "")
+                if overall:
+                    lines.append(f"**Why low priority:** {overall}")
+                    lines.append("")
 
             lines.append("---")
             lines.append("")
