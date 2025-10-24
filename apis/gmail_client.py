@@ -142,6 +142,38 @@ class GmailClient:
             self._handle_api_error(e, "fetching unread messages")
             return None
 
+    def get_recent_messages(
+        self, max_results: int = 200, label_ids: Optional[List[str]] = None
+    ) -> Optional[List[Dict[str, Any]]]:
+        """
+        Fetch recent messages from Gmail inbox (both read and unread)
+
+        Args:
+            max_results: Maximum number of messages to fetch
+            label_ids: List of label IDs to filter by (default: INBOX only)
+
+        Returns:
+            List of message metadata (id, threadId) or None if error
+        """
+        try:
+            if label_ids is None:
+                label_ids = ["INBOX"]
+
+            results = (
+                self.gmail_service.users()
+                .messages()
+                .list(userId="me", labelIds=label_ids, maxResults=max_results)
+                .execute()
+            )
+
+            messages = results.get("messages", [])
+            self.log_operation("Fetched recent messages", f"{len(messages)} messages")
+            return messages
+
+        except Exception as e:
+            self._handle_api_error(e, "fetching recent messages")
+            return None
+
     def get_message_details(self, message_id: str) -> Optional[Dict[str, Any]]:
         """
         Get full message details including headers and body

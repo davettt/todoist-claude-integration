@@ -45,13 +45,19 @@ def fetch_digest_emails(days_back: int = 14) -> list:
         gmail_client = GmailClient()
 
         print(f"📧 Fetching emails from last {days_back} days...")
+        # Try to get unread messages first
         messages = gmail_client.get_unread_messages(max_results=200)
 
+        # If no unread messages, try recent messages (includes read emails)
         if not messages:
-            print("📭 No unread emails found")
+            print("   No unread emails found, fetching recent emails instead...")
+            messages = gmail_client.get_recent_messages(max_results=200)
+
+        if not messages:
+            print("📭 No emails found")
             return []
 
-        print(f"   Found {len(messages)} unread messages")
+        print(f"   Found {len(messages)} messages")
         print()
 
         # Process each message

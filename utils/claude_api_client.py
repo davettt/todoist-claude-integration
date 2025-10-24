@@ -251,12 +251,24 @@ Respond ONLY with valid JSON. No backticks, no markdown, ONLY JSON."""
             # Parse JSON
             analysis = json.loads(response_text)
 
-            # Validate required fields
-            required_fields = ["level", "category", "bullets", "overall_reasoning"]
-            for field in required_fields:
+            # Validate required fields - support both old and new formats
+            required_core_fields = ["level", "category", "overall_reasoning"]
+            for field in required_core_fields:
                 if field not in analysis:
                     print(f"⚠️  Missing field in analysis: {field}")
                     return None
+
+            # Handle both old and new format for details
+            # New format: summary, relevance, key_details, decision_point
+            # Old format: bullets
+            has_new_format = "summary" in analysis and "key_details" in analysis
+            has_old_format = "bullets" in analysis
+
+            if not has_new_format and not has_old_format:
+                print(
+                    "⚠️  Missing content fields (neither 'bullets' nor 'summary'/'key_details')"
+                )
+                return None
 
             # Validate interest level
             valid_levels = ["urgent", "high", "medium", "low"]
@@ -264,9 +276,12 @@ Respond ONLY with valid JSON. No backticks, no markdown, ONLY JSON."""
                 print(f"⚠️  Invalid interest level: {analysis['level']}")
                 analysis["level"] = "medium"  # Default fallback
 
-            # Ensure bullets is a list
-            if not isinstance(analysis["bullets"], list):
+            # Ensure list fields are actually lists
+            if has_old_format and not isinstance(analysis.get("bullets"), list):
                 analysis["bullets"] = []
+
+            if has_new_format and not isinstance(analysis.get("key_details"), list):
+                analysis["key_details"] = []
 
             return analysis
 

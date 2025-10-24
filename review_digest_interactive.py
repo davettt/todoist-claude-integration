@@ -185,8 +185,30 @@ def show_email_with_analysis(email: dict, current: int, total: int):
     print(f"   Confidence: {confidence}")
     print()
 
-    # Show key points
-    if email.get("bullets"):
+    # Show new structured format fields if available
+    if email.get("summary"):
+        print("📋 What's This About:")
+        print(f"   {email['summary']}")
+        print()
+
+    if email.get("relevance"):
+        print("🎯 Why It's Relevant:")
+        print(f"   {email['relevance']}")
+        print()
+
+    if email.get("key_details"):
+        print("💡 Key Details:")
+        for detail in email["key_details"]:
+            print(f"   • {detail}")
+        print()
+
+    if email.get("decision_point"):
+        print("📧 Decision Point:")
+        print(f"   {email['decision_point']}")
+        print()
+
+    # Show legacy key points (for backward compatibility)
+    if email.get("bullets") and not email.get("summary"):
         print("KEY POINTS:")
         for i, bullet in enumerate(email["bullets"], 1):
             # Clean up bullet text (remove leading/trailing asterisks and spaces)
@@ -195,7 +217,7 @@ def show_email_with_analysis(email: dict, current: int, total: int):
             print(f"  {i}. {bullet_clean}")
         print()
 
-    # Show AI reasoning
+    # Show AI reasoning (legacy field)
     if email.get("reasoning"):
         reasoning = email["reasoning"].strip("* ").strip()  # Remove stray asterisks
         print("AI REASONING:")
