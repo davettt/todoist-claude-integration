@@ -58,19 +58,21 @@ def print_menu():
     print("  4. 📨 Process forwarded emails (create tasks from emails)")
     print("  5. 📰 Generate email digest (AI-powered newsletter summary)")
     print("  6. 📧 Review digest interactively (view + rate in one flow)")
+    print("  7. 👁️ View my email profile (interests, projects, trusted senders)")
+    print("  8. ⚙️ Manage my email profile (add/remove interests, projects)")
     print()
     print("📊 VIEWS:")
-    print("  7. 📋 View my current tasks")
-    print("  8. 📅 View my calendar")
+    print("  9. 📋 View my current tasks")
+    print("  10. 📅 View my calendar")
     print()
     print("💾 BACKUP:")
-    print("  9. 💾 Create backup (before making changes)")
-    print("  10. 📂 Manage backups (list/restore)")
+    print("  11. 💾 Create backup (before making changes)")
+    print("  12. 📂 Manage backups (list/restore)")
     print()
     print("⚙️ SETUP & HELP:")
-    print("  11. 🔧 First-time setup")
-    print("  12. 📖 Show full workflow guide")
-    print("  13. 🚪 Exit")
+    print("  13. 🔧 First-time setup")
+    print("  14. 📖 Show full workflow guide")
+    print("  15. 🚪 Exit")
     print()
 
 
@@ -519,6 +521,38 @@ def review_digest_interactive():
         print(f"❌ Error: {str(e)}")
 
 
+def view_profile():
+    """View email interest profile"""
+    try:
+        from utils.profile_manager import ProfileManager
+
+        manager = ProfileManager()
+        manager.view_profile()
+
+    except Exception as e:
+        print(f"❌ Error viewing profile: {str(e)}")
+
+
+def manage_profile():
+    """Manage email interest profile interactively"""
+    print("\n" + "=" * 60)
+    print("⚙️ MANAGE YOUR EMAIL PROFILE")
+    print("=" * 60)
+    print()
+    print("Update your interests, active projects, and trusted senders")
+    print("to improve email digest personalization.")
+    print()
+
+    try:
+        from utils.profile_manager import ProfileManager
+
+        manager = ProfileManager()
+        manager.interactive_menu()
+
+    except Exception as e:
+        print(f"❌ Error managing profile: {str(e)}")
+
+
 def show_full_workflow():
     """Display the full workflow guide"""
     print("\n" + "=" * 60)
@@ -590,7 +624,7 @@ def main():
         print_menu()
 
         try:
-            choice = input("Choose an option (1-13): ").strip()
+            choice = input("Choose an option (1-15): ").strip()
 
             if choice == "1":
                 export_daily_data()
@@ -611,29 +645,35 @@ def main():
                 review_digest_interactive()
 
             elif choice == "7":
-                view_current_tasks()
+                view_profile()
 
             elif choice == "8":
-                view_calendar()
+                manage_profile()
 
             elif choice == "9":
-                create_backup()
+                view_current_tasks()
 
             elif choice == "10":
-                manage_backups()
+                view_calendar()
 
             elif choice == "11":
-                first_time_setup()
+                create_backup()
 
             elif choice == "12":
-                show_full_workflow()
+                manage_backups()
 
             elif choice == "13":
+                first_time_setup()
+
+            elif choice == "14":
+                show_full_workflow()
+
+            elif choice == "15":
                 print("\n👋 Have a productive day!")
                 break
 
             else:
-                print("\n❌ Invalid choice. Please choose 1-13.")
+                print("\n❌ Invalid choice. Please choose 1-15.")
 
             input("\n⏎ Press Enter to continue...")
 

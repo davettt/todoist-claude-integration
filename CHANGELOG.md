@@ -7,6 +7,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.4.0] - 2025-10-24
+
+### Added
+- Interactive profile management system (`utils/profile_manager.py`)
+  - View email interest profile in human-readable format
+  - Manage interests, active projects, and trusted senders interactively
+  - Email validation for trusted senders (supports both email addresses and domains)
+  - Automatic backup creation before any profile changes
+  - Graceful handling of missing or corrupted profile files
+- Daily manager enhancements
+  - Option 7: View email interest profile (display current interests, projects, trusted senders)
+  - Option 8: Manage email interest profile (add/remove items interactively)
+  - Menu reorganized to include profile management in EMAIL section
+
+### Changed
+- Daily manager menu reorganized (options shifted to accommodate new features)
+  - Former options 7-8 (VIEWS) now options 9-10
+  - Former options 9-13 (BACKUP/SETUP/EXIT) now options 11-15
+- Menu prompt updated to accept choices 1-15
+
 ## [1.3.1] - 2025-10-04
 
 ### Added
