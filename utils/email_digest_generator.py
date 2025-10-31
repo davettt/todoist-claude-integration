@@ -30,6 +30,9 @@ class EmailDigestGenerator:
         self.learning_context = None
         self._init_learning()
 
+        # Store analyzed emails for post-processing
+        self.analyzed_emails = []
+
         # Ensure directory exists
         os.makedirs(self.digest_dir, exist_ok=True)
 
@@ -74,6 +77,7 @@ class EmailDigestGenerator:
             "digest_settings": {
                 "max_emails_per_digest": 100,
                 "auto_archive_low_interest": False,
+                "auto_label_low_interest": True,
             },
         }
 
@@ -229,6 +233,9 @@ class EmailDigestGenerator:
         print(f"✅ Analyzed {len(analyzed_emails)}/{len(emails)} emails")
         print()
 
+        # Store analyzed emails for post-processing
+        self.analyzed_emails = analyzed_emails
+
         # Generate markdown
         print("📝 Generating markdown digest...")
         markdown_path = self._create_markdown_digest(analyzed_emails, date_range_days)
@@ -239,6 +246,79 @@ class EmailDigestGenerator:
         else:
             print("❌ Failed to create digest")
             return None
+
+    def auto_handle_low_interest_emails(self) -> Dict[str, int]:
+        """
+        Automatically mark LOW-rated emails as read and add 'low_interest' label
+        Based on profile setting: digest_settings.auto_label_low_interest
+
+        Returns:
+            Dict with counts of processed and failed emails
+        """
+        from apis.gmail_client import GmailClient
+
+        # Check if feature is enabled
+        auto_label_enabled = self.user_profile.get("digest_settings", {}).get(
+            "auto_label_low_interest", False
+        )
+
+        if not auto_label_enabled:
+            return {"processed": 0, "failed": 0, "skipped_disabled": True}
+
+        # Get LOW-rated emails
+        low_interest_emails = [
+            item
+            for item in self.analyzed_emails
+            if item["analysis"].get("level") == "low"
+        ]
+
+        if not low_interest_emails:
+            return {"processed": 0, "failed": 0, "skipped_no_low": True}
+
+        print()
+        print("📋 Auto-handling LOW-interest emails:")
+        print(f"   Found {len(low_interest_emails)} LOW-rated emails")
+        print("   Marking as read + adding 'low_interest' label...")
+
+        # Initialize Gmail client
+        gmail_client = GmailClient()
+
+        processed_count = 0
+        failed_count = 0
+
+        for item in low_interest_emails:
+            email = item["email"]
+            email_id = email.get("id")
+            subject = email.get("subject", "No subject")[:40]
+
+            if not email_id:
+                print(f"   ⚠️  No ID for email: {subject}")
+                failed_count += 1
+                continue
+
+            try:
+                success = gmail_client.mark_as_read_and_label_low_interest(email_id)
+                if success:
+                    processed_count += 1
+                else:
+                    failed_count += 1
+                    print(f"   ⚠️  Failed to process: {subject}")
+            except Exception as e:
+                print(f"   ⚠️  Error processing {subject}: {str(e)}")
+                failed_count += 1
+
+        print(
+            f"   ✅ Processed {processed_count}/{len(low_interest_emails)} LOW-rated emails"
+        )
+        if failed_count > 0:
+            print(f"   ⚠️  Failed: {failed_count}")
+        print()
+
+        return {
+            "processed": processed_count,
+            "failed": failed_count,
+            "total_low": len(low_interest_emails),
+        }
 
     def _analyze_email(self, email: Dict[str, Any]) -> Optional[Dict[str, Any]]:
         """Analyze single email with Claude API"""

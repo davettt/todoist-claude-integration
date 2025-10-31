@@ -115,27 +115,41 @@ class GmailClient:
         print(f"📝 {log_message}")
 
     def get_unread_messages(
-        self, max_results: int = 10
+        self, max_results: int = 10, exclude_low_interest: bool = True
     ) -> Optional[List[Dict[str, Any]]]:
         """
         Fetch unread messages from Gmail inbox
 
         Args:
             max_results: Maximum number of messages to fetch
+            exclude_low_interest: If True, exclude emails labeled as low_interest (default: True)
 
         Returns:
             List of message metadata (id, threadId) or None if error
         """
         try:
+            # Build query to exclude low_interest label
+            query = None
+            if exclude_low_interest:
+                query = "-label:low_interest"
+
             results = (
                 self.gmail_service.users()
                 .messages()
-                .list(userId="me", labelIds=["INBOX", "UNREAD"], maxResults=max_results)
+                .list(
+                    userId="me",
+                    labelIds=["INBOX", "UNREAD"],
+                    maxResults=max_results,
+                    q=query,
+                )
                 .execute()
             )
 
             messages = results.get("messages", [])
-            self.log_operation("Fetched unread messages", f"{len(messages)} messages")
+            exclusion_note = " (excluding low_interest)" if exclude_low_interest else ""
+            self.log_operation(
+                f"Fetched unread messages{exclusion_note}", f"{len(messages)} messages"
+            )
             return messages
 
         except Exception as e:
@@ -143,7 +157,10 @@ class GmailClient:
             return None
 
     def get_recent_messages(
-        self, max_results: int = 200, label_ids: Optional[List[str]] = None
+        self,
+        max_results: int = 200,
+        label_ids: Optional[List[str]] = None,
+        exclude_low_interest: bool = True,
     ) -> Optional[List[Dict[str, Any]]]:
         """
         Fetch recent messages from Gmail inbox (both read and unread)
@@ -151,6 +168,7 @@ class GmailClient:
         Args:
             max_results: Maximum number of messages to fetch
             label_ids: List of label IDs to filter by (default: INBOX only)
+            exclude_low_interest: If True, exclude emails labeled as low_interest (default: True)
 
         Returns:
             List of message metadata (id, threadId) or None if error
@@ -159,15 +177,23 @@ class GmailClient:
             if label_ids is None:
                 label_ids = ["INBOX"]
 
+            # Build query to exclude low_interest label
+            query = None
+            if exclude_low_interest:
+                query = "-label:low_interest"
+
             results = (
                 self.gmail_service.users()
                 .messages()
-                .list(userId="me", labelIds=label_ids, maxResults=max_results)
+                .list(userId="me", labelIds=label_ids, maxResults=max_results, q=query)
                 .execute()
             )
 
             messages = results.get("messages", [])
-            self.log_operation("Fetched recent messages", f"{len(messages)} messages")
+            exclusion_note = " (excluding low_interest)" if exclude_low_interest else ""
+            self.log_operation(
+                f"Fetched recent messages{exclusion_note}", f"{len(messages)} messages"
+            )
             return messages
 
         except Exception as e:
@@ -366,6 +392,116 @@ class GmailClient:
 
         except Exception as e:
             self._handle_api_error(e, "deleting message")
+            return False
+
+    def get_or_create_label(self, label_name: str) -> Optional[str]:
+        """
+        Get or create a Gmail label by name
+
+        Args:
+            label_name: Name of the label to get or create
+
+        Returns:
+            Label ID if successful, None otherwise
+        """
+        try:
+            # Get all labels
+            results = self.gmail_service.users().labels().list(userId="me").execute()
+            labels = results.get("labels", [])
+
+            # Check if label already exists
+            for label in labels:
+                if label["name"] == label_name:
+                    self.log_operation(
+                        f"Found existing label '{label_name}'", f"ID: {label['id']}"
+                    )
+                    return label["id"]
+
+            # Label doesn't exist, create it
+            label_object = {
+                "name": label_name,
+                "labelListVisibility": "labelShow",
+                "messageListVisibility": "show",
+            }
+
+            created_label = (
+                self.gmail_service.users()
+                .labels()
+                .create(userId="me", body=label_object)
+                .execute()
+            )
+
+            self.log_operation(
+                f"Created new label '{label_name}'", f"ID: {created_label['id']}"
+            )
+            return created_label["id"]
+
+        except Exception as e:
+            self._handle_api_error(e, f"getting or creating label '{label_name}'")
+            return None
+
+    def add_label_to_message(self, message_id: str, label_name: str) -> bool:
+        """
+        Add a label to a message (creates label if it doesn't exist)
+
+        Args:
+            message_id: Gmail message ID
+            label_name: Name of the label to add
+
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            # Get or create label
+            label_id = self.get_or_create_label(label_name)
+            if not label_id:
+                return False
+
+            # Add label to message
+            self.gmail_service.users().messages().modify(
+                userId="me", id=message_id, body={"addLabelIds": [label_id]}
+            ).execute()
+
+            self.log_operation(
+                f"Added label '{label_name}'", f"ID: {message_id[:10]}..."
+            )
+            return True
+
+        except Exception as e:
+            self._handle_api_error(e, f"adding label '{label_name}' to message")
+            return False
+
+    def mark_as_read_and_label_low_interest(self, message_id: str) -> bool:
+        """
+        Mark message as read and add 'low_interest' label
+        This is used for automatically handling LOW-rated emails from AI analysis
+
+        Args:
+            message_id: Gmail message ID
+
+        Returns:
+            True if successful, False otherwise
+        """
+        try:
+            # Get or create low_interest label
+            label_id = self.get_or_create_label("low_interest")
+            if not label_id:
+                return False
+
+            # Mark as read AND add label in single operation
+            self.gmail_service.users().messages().modify(
+                userId="me",
+                id=message_id,
+                body={"removeLabelIds": ["UNREAD"], "addLabelIds": [label_id]},
+            ).execute()
+
+            self.log_operation(
+                "Marked as read + low_interest", f"ID: {message_id[:10]}..."
+            )
+            return True
+
+        except Exception as e:
+            self._handle_api_error(e, "marking message as read and low_interest")
             return False
 
     def extract_sender_info(self, from_header: str) -> Dict[str, str]:

@@ -177,23 +177,27 @@ def main():
             print(f"📄 Digest saved: {os.path.basename(digest_path)}")
             print()
 
-            # Automatically mark emails as read
-            if emails:
-                print("📧 Email Management:")
-                print(f"   Marking {len(emails)} emails as read in Gmail...")
+            # Auto-handle LOW-interest emails (mark as read + add label)
+            result = generator.auto_handle_low_interest_emails()
 
-                gmail_client = GmailClient()
-                marked_count = 0
+            # If no low-interest emails or feature disabled, mark all as read (old behavior)
+            if result.get("skipped_disabled") or result.get("skipped_no_low"):
+                if emails:
+                    print("📧 Email Management:")
+                    print(f"   Marking {len(emails)} emails as read in Gmail...")
 
-                for email in emails:
-                    try:
-                        gmail_client.mark_as_read(email["id"])
-                        marked_count += 1
-                    except Exception:
-                        print(f"   ⚠️  Failed to mark {email['subject'][:40]}...")
+                    gmail_client = GmailClient()
+                    marked_count = 0
 
-                print(f"   ✅ Marked {marked_count}/{len(emails)} emails as read")
-                print()
+                    for email in emails:
+                        try:
+                            gmail_client.mark_as_read(email["id"])
+                            marked_count += 1
+                        except Exception:
+                            print(f"   ⚠️  Failed to mark {email['subject'][:40]}...")
+
+                    print(f"   ✅ Marked {marked_count}/{len(emails)} emails as read")
+                    print()
 
             print("📝 Next steps:")
             print("  • Return to daily manager")
